@@ -96,7 +96,7 @@ interface Position {
 
 ## Related
 
-- [aprs-backend](../aprs-backend) — Node.js backend, APRS-IS/APRS.fi ingestion, Supabase persistence
+- [aprs-backend](https://github.com/beslagicadin/APRS-dashboard-backend) — Node.js backend, APRS-IS/APRS.fi ingestion, Supabase persistence
 
 ## License
 
