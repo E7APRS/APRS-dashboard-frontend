@@ -100,4 +100,6 @@ interface Position {
 
 ## License
 
-MIT
+Copyright (c) 2026 Adin Bešlagić. All rights reserved.  
+Reuse permitted only with written permission from the author.  
+See [LICENSE](./LICENSE) for full terms.
