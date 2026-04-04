@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { getSocket } from '@/lib/socket';
 import { Position } from '@/lib/types';
 import DeviceList from '@/components/DeviceList';
@@ -20,6 +20,7 @@ export default function Home() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [connected, setConnected]   = useState(false);
   const [activeSources, setActiveSources] = useState<string[]>([]);
+  const initialCentered = useRef(false);
 
   const applyPosition = useCallback((pos: Position) => {
     setPositions(prev => new Map(prev).set(pos.radioId, pos));
@@ -48,6 +49,23 @@ export default function Home() {
 
     socket.on('positions:snapshot', (data: Position[]) => {
       data.forEach(applyPosition);
+      if (!initialCentered.current) {
+        const e70ab = data.find(p => p.radioId === 'E70AB' || p.radioId.startsWith('E70AB-'));
+        if (e70ab) {
+          setSelectedId(e70ab.radioId);
+          initialCentered.current = true;
+        }
+      }
+    });
+
+    socket.on('history:snapshot', (data: Record<string, Position[]>) => {
+      setHistory(prev => {
+        const map = new Map(prev);
+        for (const [radioId, trail] of Object.entries(data)) {
+          map.set(radioId, trail);
+        }
+        return map;
+      });
     });
 
     socket.on('position:update', (pos: Position) => {
@@ -58,6 +76,7 @@ export default function Home() {
       socket.off('connect');
       socket.off('disconnect');
       socket.off('positions:snapshot');
+      socket.off('history:snapshot');
       socket.off('position:update');
     };
   }, [applyPosition]);
