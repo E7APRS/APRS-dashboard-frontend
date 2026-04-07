@@ -1,17 +1,18 @@
 # APRS Tracker — Frontend
 
-Next.js frontend for real-time GPS tracking. Displays live radio positions on an interactive map with movement trails, device sidebar, and multi-source support.
+Next.js frontend for real-time GPS tracking. Displays live radio positions on an interactive map with movement trails, device sidebar, search, sorting, and APRS symbol icons.
 
 ## Features
 
-- **Live map** — Leaflet + OpenStreetMap, auto-pans to selected device
+- **Live map** — Leaflet + OpenStreetMap/Topo/Satellite tile layers
+- **APRS symbol icons** — sprite sheet from [hessu/aprs-symbols](https://github.com/hessu/aprs-symbols) via CDN
 - **Real-time updates** — Socket.io WebSocket, zero polling
-- **Movement trails** — last 50 positions per device shown as a path
-- **Multi-source colour coding** — distinct marker colours per data source
-- **Device sidebar** — list of active radios with last position, speed, altitude, age
-- **Source legend** — shows which data sources are currently active
-- **APRS.fi attribution** — ToS-compliant credit shown when APRS.fi source is active
-- **Startup snapshot** — receives full current state on connect, no stale data
+- **Trail history** — last 50 positions per device shown as a polyline
+- **Auto-center on E70AB** — map centers on E70AB on startup if present
+- **Device sidebar** — searchable, sortable list (name / last seen, ASC / DESC)
+- **Tile layer switcher** — Karta / Topo / Satelit
+- **Multi-source colour coding** — trail colour per data source
+- **APRS.fi attribution** — ToS-compliant credit when APRS.fi source is active
 
 ## Tech Stack
 
@@ -31,9 +32,7 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:3000`.
-
-Backend must be running on the URL set in `NEXT_PUBLIC_BACKEND_URL`.
+Open `http://localhost:3000`. Backend must be running at `NEXT_PUBLIC_BACKEND_URL`.
 
 ## Environment Variables
 
@@ -41,62 +40,76 @@ Backend must be running on the URL set in `NEXT_PUBLIC_BACKEND_URL`.
 |---|---|---|
 | `NEXT_PUBLIC_BACKEND_URL` | `http://localhost:3001` | Backend URL (WebSocket + REST) |
 
-## Marker Colours
+## APRS Symbol Icons
+
+Icons are rendered using the [hessu/aprs-symbols](https://github.com/hessu/aprs-symbols) sprite sheets loaded from jsDelivr CDN. No local assets needed.
+
+Each symbol is a 24×24px tile in a 16-column grid. Position formula:
+
+```
+index = charCode(symbolCode) - 33
+x     = (index % 16) * 24
+y     = Math.floor(index / 16) * 24
+```
+
+Sheet `0` = primary table (`/`), Sheet `1` = alternate table (`\`).
+
+Fallback to a coloured circle if no symbol data is present (e.g. devices loaded from cache without symbol info).
+
+## Source Colours (trail lines)
 
 | Colour | Source |
 |---|---|
-| Amber | Simulator |
 | Blue | APRS.fi |
 | Purple | APRS-IS |
-| Green | DMR (direct push) |
-
-## Project Structure
-
-```
-src/
-├── app/
-│   ├── page.tsx          # Main page — WebSocket hook, state management
-│   ├── layout.tsx        # Root layout, Leaflet CSS import
-│   └── globals.css       # Tailwind + Leaflet overrides
-├── components/
-│   ├── Map.tsx           # Leaflet map, markers, trails, APRS.fi attribution
-│   ├── DeviceList.tsx    # Sidebar list of active radios
-│   ├── StatusBar.tsx     # Connection status + active sources
-│   └── Legend.tsx        # Colour legend overlay
-└── lib/
-    ├── socket.ts         # Socket.io singleton client
-    └── types.ts          # Shared TypeScript types
-```
+| Green | DMR |
+| Gray | Fixed stations |
 
 ## WebSocket Events
 
-The frontend connects to the backend via Socket.io and listens for:
-
 | Event | Payload | Description |
 |---|---|---|
-| `positions:snapshot` | `Position[]` | Full state snapshot on connect |
+| `positions:snapshot` | `Position[]` | All current positions on connect |
+| `history:snapshot` | `Record<radioId, Position[]>` | Trail history on connect |
 | `position:update` | `Position` | Live position update |
 
 ## Position Type
 
 ```typescript
 interface Position {
-  radioId:   string;
-  callsign:  string;
-  lat:       number;
-  lon:       number;
-  altitude?: number;
-  speed?:    number;
-  course?:   number;
-  comment?:  string;
-  timestamp: string;
-  source:    'simulator' | 'aprsfi' | 'aprsis' | 'dmr';
+  radioId:      string;
+  callsign:     string;
+  lat:          number;
+  lon:          number;
+  altitude?:    number;
+  speed?:       number;
+  course?:      number;
+  comment?:     string;
+  symbol?:      string;       // APRS symbol code e.g. '-', '[', '>'
+  symbolTable?: string;       // '/' = primary, '\' = alternate
+  timestamp:    string;
+  source:       'aprsfi' | 'aprsis' | 'dmr' | 'fixed';
 }
 ```
 
-## Related
+## Project Structure
 
-- [aprs-backend](https://github.com/beslagicadin/APRS-dashboard-backend) — Node.js backend, APRS-IS/APRS.fi ingestion, Supabase persistence
+```
+src/
+├── app/
+│   ├── page.tsx          # Root — WebSocket, state, auto-center logic
+│   ├── layout.tsx        # Root layout, Leaflet CSS import
+│   └── globals.css       # Tailwind + Leaflet overrides
+├── components/
+│   ├── Map.tsx           # Leaflet map, APRS icon sprites, trails, tile switcher
+│   ├── DeviceList.tsx    # Sidebar — search + sort + device list
+│   ├── StatusBar.tsx     # Connection status + active sources + device count
+│   └── Legend.tsx        # Source colour legend overlay
+└── lib/
+    ├── socket.ts         # Socket.io singleton client
+    ├── types.ts          # Shared TypeScript types
+    └── colors.ts         # Source → colour mapping
+```
 
 ## License
 
