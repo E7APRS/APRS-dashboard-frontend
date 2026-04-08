@@ -43,7 +43,9 @@ export default function DeviceList({ positions, selectedId, onSelect }: Props) {
     if (sortField === 'name') {
       cmp = a.callsign.localeCompare(b.callsign);
     } else {
-      cmp = new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
+      const ta = new Date(a.timestamp).getTime();
+      const tb = new Date(b.timestamp).getTime();
+      cmp = (isNaN(ta) || isNaN(tb)) ? 0 : ta - tb;
     }
     return sortDir === 'asc' ? cmp : -cmp;
   });
