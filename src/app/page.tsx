@@ -2,11 +2,14 @@
 
 import dynamic from 'next/dynamic';
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { getSocket } from '@/lib/socket';
+import { useRouter } from 'next/navigation';
+import { getSocket, disconnectSocket } from '@/lib/socket';
 import { Position } from '@/lib/types';
 import DeviceList from '@/components/DeviceList';
 import StatusBar from '@/components/StatusBar';
 import Legend from '@/components/Legend';
+import { useAuth } from '@/components/AuthProvider';
+import { createClient } from '@/lib/supabase';
 
 // Leaflet cannot be SSR-rendered (rename avoids shadowing global Map<K,V>)
 const TrackingMap = dynamic(() => import('@/components/Map'), { ssr: false });
@@ -15,12 +18,23 @@ const HISTORY_LIMIT = 50;
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3001';
 
 export default function Home() {
+  const { session, loading } = useAuth();
+  const router = useRouter();
+  const supabase = createClient();
+
   const [positions, setPositions]   = useState<Map<string, Position>>(new Map());
   const [history, setHistory]       = useState<Map<string, Position[]>>(new Map());
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [connected, setConnected]   = useState(false);
   const [activeSources, setActiveSources] = useState<string[]>([]);
   const initialCentered = useRef(false);
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!loading && !session) {
+      router.replace('/login');
+    }
+  }, [session, loading, router]);
 
   const applyPosition = useCallback((pos: Position) => {
     setPositions(prev => new Map(prev).set(pos.radioId, pos));
@@ -34,15 +48,19 @@ export default function Home() {
 
   // Fetch status — active sources + feature flags
   useEffect(() => {
-    fetch(`${BACKEND_URL}/api/status`)
+    if (!session) return;
+    fetch(`${BACKEND_URL}/api/status`, {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    })
       .then(r => r.json())
       .then(data => setActiveSources(data.activeSources ?? []))
       .catch(() => {});
-  }, []);
+  }, [session]);
 
   // WebSocket
   useEffect(() => {
-    const socket = getSocket();
+    if (!session) return;
+    const socket = getSocket(session.access_token);
 
     socket.on('connect',    () => setConnected(true));
     socket.on('disconnect', () => setConnected(false));
@@ -79,7 +97,17 @@ export default function Home() {
       socket.off('history:snapshot');
       socket.off('position:update');
     };
-  }, [applyPosition]);
+  }, [session, applyPosition]);
+
+  async function handleSignOut() {
+    disconnectSocket();
+    await supabase.auth.signOut();
+    router.replace('/login');
+  }
+
+  if (loading || !session) {
+    return <div className="flex items-center justify-center h-screen bg-gray-900 text-gray-400">Loading...</div>;
+  }
 
   return (
     <div className="flex flex-col h-screen">
@@ -87,6 +115,7 @@ export default function Home() {
         connected={connected}
         activeSources={activeSources}
         deviceCount={positions.size}
+        onSignOut={handleSignOut}
       />
 
       <div className="flex flex-1 overflow-hidden">
