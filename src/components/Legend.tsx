@@ -1,6 +1,6 @@
 'use client';
 
-import { SOURCE_COLOR } from './Map';
+import { SOURCE_COLOR } from '@/lib/colors';
 
 const SOURCE_LABEL: Record<string, string> = {
   simulator: 'Simulator',
