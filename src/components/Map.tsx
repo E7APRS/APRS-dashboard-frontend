@@ -44,7 +44,7 @@ function createIcon(source: string, symbol?: string, symbolTable?: string): L.Di
   const color = SOURCE_COLOR[source] ?? '#6b7280';
   return L.divIcon({
     className: '',
-    html: `<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2px solid white;box-shadow:0 0 4px rgba(0,0,0,0.5);"></div>`,
+    html: `<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2px solid #1A1A1A;box-shadow:0 0 0 1px rgba(255,255,255,0.9),0 0 4px rgba(0,0,0,0.5);"></div>`,
     iconSize: [14, 14],
     iconAnchor: [7, 7],
     popupAnchor: [0, -10],
@@ -106,28 +106,28 @@ export default function Map({ positions, history, selectedId, activeSources = []
     <div className="relative w-full h-full">
     {/* APRS.fi attribution — required by ToS when using their API */}
     {activeSources.includes('aprsfi') && (
-      <div className="absolute bottom-8 left-2 z-[1000] bg-white/90 text-xs px-2 py-1 rounded shadow pointer-events-auto">
+      <div className="absolute bottom-8 left-2 z-[1000] bg-white/95 dark:bg-brand-onyx/95 text-brand-onyx dark:text-gray-300 text-xs px-2 py-1 rounded shadow border border-gray-500/85 dark:border-gray-500/85 pointer-events-auto">
         Location data from{' '}
         <a
           href="https://aprs.fi"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-blue-600 underline"
+          className="text-brand-dark-orange dark:text-brand-orange underline"
         >
           aprs.fi
         </a>
       </div>
     )}
     {/* Tile layer switcher */}
-    <div className="absolute top-2 right-2 z-[1000] flex rounded overflow-hidden shadow">
+    <div className="absolute top-2 right-2 z-[1000] flex rounded overflow-hidden shadow border border-gray-500/85 dark:border-gray-500/85">
       {(Object.entries(TILE_LAYERS) as [TileLayerKey, typeof TILE_LAYERS[TileLayerKey]][]).map(([key, layer]) => (
         <button
           key={key}
           onClick={() => setTileLayer(key)}
-          className={`px-3 py-1 text-xs font-medium border-r last:border-r-0 ${
+          className={`px-3 py-1 text-xs font-medium border-r border-gray-500/85 dark:border-gray-500/85 last:border-r-0 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-dark-orange dark:focus-visible:ring-brand-orange ${
             tileLayer === key
-              ? 'bg-blue-600 text-white'
-              : 'bg-white text-gray-700 hover:bg-gray-100'
+              ? 'bg-brand-orange text-brand-onyx'
+              : 'bg-white dark:bg-[#111] text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10'
           }`}
         >
           {layer.label}
