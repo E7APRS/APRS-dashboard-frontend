@@ -26,6 +26,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     // `dark` class applied by default; ThemeProvider hydrates the correct value client-side
     <html lang="en" className="dark" suppressHydrationWarning>
+      <head>
+        <link rel="icon" href="/e7aprs.ico" sizes="any" />
+        <link rel="icon" type="image/png" href="/e7aprs.png" />
+        <link rel="apple-touch-icon" href="/e7aprs.png" />
+      </head>
       <body className={`${rajdhani.variable} ${roboto.variable} font-roboto bg-gray-50 dark:bg-brand-onyx text-brand-onyx dark:text-white antialiased`}>
         <ThemeProvider>
           <AuthProvider>{children}</AuthProvider>
