@@ -1,6 +1,7 @@
 # APRS Tracker — Frontend
 
-Next.js frontend for real-time GPS tracking. Displays live radio positions on an interactive map with movement trails, device sidebar, search, sorting, and APRS symbol icons.
+Next.js frontend for real-time GPS tracking. Displays live radio positions on an interactive map with movement trails,
+device sidebar, search, sorting, and APRS symbol icons.
 
 ## Features
 
@@ -16,13 +17,13 @@ Next.js frontend for real-time GPS tracking. Displays live radio positions on an
 
 ## Tech Stack
 
-| Layer | Choice |
-|---|---|
+| Layer     | Choice                  |
+|-----------|-------------------------|
 | Framework | Next.js 14 (App Router) |
-| Map | Leaflet + react-leaflet |
-| Real-time | Socket.io client |
-| Styling | Tailwind CSS |
-| Language | TypeScript |
+| Map       | Leaflet + react-leaflet |
+| Real-time | Socket.io client        |
+| Styling   | Tailwind CSS            |
+| Language  | TypeScript              |
 
 ## Quick Start
 
@@ -36,13 +37,14 @@ Open `http://localhost:3000`. Backend must be running at `NEXT_PUBLIC_BACKEND_UR
 
 ## Environment Variables
 
-| Variable | Default | Description |
-|---|---|---|
+| Variable                  | Default                 | Description                    |
+|---------------------------|-------------------------|--------------------------------|
 | `NEXT_PUBLIC_BACKEND_URL` | `http://localhost:3001` | Backend URL (WebSocket + REST) |
 
 ## APRS Symbol Icons
 
-Icons are rendered using the [hessu/aprs-symbols](https://github.com/hessu/aprs-symbols) sprite sheets loaded from jsDelivr CDN. No local assets needed.
+Icons are rendered using the [hessu/aprs-symbols](https://github.com/hessu/aprs-symbols) sprite sheets loaded from
+jsDelivr CDN. No local assets needed.
 
 Each symbol is a 24×24px tile in a 16-column grid. Position formula:
 
@@ -58,37 +60,37 @@ Fallback to a coloured circle if no symbol data is present (e.g. devices loaded 
 
 ## Source Colours (trail lines)
 
-| Colour | Source |
-|---|---|
-| Blue | APRS.fi |
-| Purple | APRS-IS |
-| Green | DMR |
-| Gray | Fixed stations |
+| Colour | Source         |
+|--------|----------------|
+| Blue   | APRS.fi        |
+| Purple | APRS-IS        |
+| Green  | DMR            |
+| Gray   | Fixed stations |
 
 ## WebSocket Events
 
-| Event | Payload | Description |
-|---|---|---|
-| `positions:snapshot` | `Position[]` | All current positions on connect |
-| `history:snapshot` | `Record<radioId, Position[]>` | Trail history on connect |
-| `position:update` | `Position` | Live position update |
+| Event                | Payload                       | Description                      |
+|----------------------|-------------------------------|----------------------------------|
+| `positions:snapshot` | `Position[]`                  | All current positions on connect |
+| `history:snapshot`   | `Record<radioId, Position[]>` | Trail history on connect         |
+| `position:update`    | `Position`                    | Live position update             |
 
 ## Position Type
 
 ```typescript
 interface Position {
-  radioId:      string;
-  callsign:     string;
-  lat:          number;
-  lon:          number;
-  altitude?:    number;
-  speed?:       number;
-  course?:      number;
-  comment?:     string;
-  symbol?:      string;       // APRS symbol code e.g. '-', '[', '>'
-  symbolTable?: string;       // '/' = primary, '\' = alternate
-  timestamp:    string;
-  source:       'aprsfi' | 'aprsis' | 'dmr' | 'fixed';
+    radioId: string;
+    callsign: string;
+    lat: number;
+    lon: number;
+    altitude?: number;
+    speed?: number;
+    course?: number;
+    comment?: string;
+    symbol?: string;       // APRS symbol code e.g. '-', '[', '>'
+    symbolTable?: string;       // '/' = primary, '\' = alternate
+    timestamp: string;
+    source: 'aprsfi' | 'aprsis' | 'dmr' | 'fixed';
 }
 ```
 
