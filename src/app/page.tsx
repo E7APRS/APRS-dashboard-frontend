@@ -106,7 +106,7 @@ export default function Home() {
   }
 
   if (loading || !session) {
-    return <div className="flex items-center justify-center h-screen bg-gray-900 text-gray-400">Loading...</div>;
+    return <div className="flex items-center justify-center h-screen bg-gray-50 dark:bg-brand-onyx text-gray-600 dark:text-gray-300">Loading...</div>;
   }
 
   return (
@@ -120,8 +120,8 @@ export default function Home() {
 
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
-        <aside className="w-64 bg-gray-800 border-r border-gray-700 overflow-y-auto flex-shrink-0">
-          <div className="px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide border-b border-gray-700">
+        <aside className="w-64 bg-white dark:bg-[#111] border-r border-gray-500/85 dark:border-gray-500/85 overflow-y-auto flex-shrink-0 shadow-sm dark:shadow-none">
+          <div className="px-4 py-3 text-xs font-rajdhani font-semibold text-brand-dark-orange dark:text-brand-orange uppercase tracking-widest border-b border-gray-500/85 dark:border-gray-500/85">
             Devices
           </div>
           <DeviceList

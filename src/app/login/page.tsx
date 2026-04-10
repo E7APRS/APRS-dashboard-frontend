@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { createClient } from '@/lib/supabase';
 
 export default function LoginPage() {
@@ -15,16 +16,50 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex items-center justify-center h-screen bg-gray-900">
-      <div className="bg-gray-800 border border-gray-700 rounded-xl p-8 flex flex-col items-center gap-6 w-80">
-        <div className="text-center">
-          <h1 className="text-xl font-bold text-white">APRS Tracker</h1>
-          <p className="text-sm text-gray-400 mt-1">Real-time GPS tracking</p>
+    <div className="flex items-center justify-center h-screen bg-gray-100 dark:bg-brand-onyx transition-colors">
+      {/* Subtle grid texture */}
+      <div
+        className="absolute inset-0 opacity-[0.04] pointer-events-none"
+        style={{
+          backgroundImage:
+            'linear-gradient(#FF6600 1px, transparent 1px), linear-gradient(90deg, #FF6600 1px, transparent 1px)',
+          backgroundSize: '40px 40px',
+        }}
+      />
+
+      <div className="relative bg-white dark:bg-[#111] border border-gray-500/85 dark:border-gray-500/85 rounded-2xl p-10 flex flex-col items-center gap-6 w-80 shadow-xl dark:shadow-none">
+        {/* Logo */}
+        <div className="flex flex-col items-center gap-3">
+          <Image
+            src="/e7aprs.png"
+            alt="E7APRS"
+            width={80}
+            height={80}
+            className="object-contain"
+            priority
+          />
+          <div className="text-center">
+            <h1 className="font-rajdhani font-bold text-3xl text-gray-800 dark:text-brand-silver tracking-widest uppercase leading-none">
+              E7APRS
+            </h1>
+            <p className="font-rajdhani text-xs text-brand-dark-orange dark:text-brand-orange tracking-widest uppercase mt-0.5">
+              DMR &amp; APRS Network
+            </p>
+          </div>
         </div>
 
+        {/* Divider */}
+        <div className="w-full h-px bg-gray-500/85 dark:bg-gray-500/85" />
+
+        {/* Subtitle */}
+        <p className="text-sm text-gray-500 dark:text-gray-400 text-center font-roboto -mt-2">
+          Real-time GPS tracking &amp; position reporting
+        </p>
+
+        {/* Sign in */}
         <button
           onClick={signInWithGoogle}
-          className="flex items-center gap-3 w-full justify-center bg-white text-gray-900 font-medium py-2.5 px-4 rounded-lg hover:bg-gray-100 transition-colors"
+          className="flex items-center gap-3 w-full justify-center bg-white dark:bg-white text-gray-900 font-medium py-2.5 px-4 rounded-lg hover:bg-gray-100 transition-colors font-roboto border border-gray-500 dark:border-gray-400 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-dark-orange dark:focus-visible:ring-brand-orange focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#111]"
         >
           <GoogleIcon />
           Sign in with Google
