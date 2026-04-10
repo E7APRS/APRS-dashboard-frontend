@@ -11,5 +11,9 @@ html, body, #__next {
 .leaflet-container {
   height: 100%;
   width: 100%;
-  background: #1f2937;
+  background: #e5e7eb;
+}
+
+.dark .leaflet-container {
+  background: #111827;
 }
