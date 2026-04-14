@@ -29,7 +29,7 @@ export default function Home() {
     const [activeSources, setActiveSources] = useState<string[]>([]);
     const initialCentered = useRef(false);
 
-    // Redirect to login if not authenticated
+    // Redirect to log in if not authenticated
     useEffect(() => {
         if (!loading && !session) {
             router.replace('/login');

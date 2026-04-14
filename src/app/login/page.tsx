@@ -40,7 +40,7 @@ export default function LoginPage() {
                         priority
                     />
                     <div className="text-center">
-                        <h1 className="font-rajdhani font-bold text-3xl text-gray-800 dark:text-brand-silver tracking-widest uppercase leading-none">
+                        <h1 className="font-rajdhani font-bold text-4xl text-gray-800 dark:text-brand-silver tracking-widest uppercase leading-none">
                             E7APRS
                         </h1>
                         <p className="font-rajdhani text-xs text-brand-dark-orange dark:text-brand-orange tracking-widest uppercase mt-0.5">

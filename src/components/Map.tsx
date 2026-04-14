@@ -1,10 +1,9 @@
 'use client';
 
-import {useEffect, useRef, useState} from 'react';
-import {MapContainer, Marker, Polyline, Popup, TileLayer, useMap} from 'react-leaflet';
+import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
-import {Position} from '@/lib/types';
-import {SOURCE_COLOR, TRACE_COLOR} from '@/lib/colors';
+import { Position } from '@/lib/types';
+import { SOURCE_COLOR, TRACE_COLOR } from '@/lib/colors';
 
 // Fix missing marker icons in Next.js
 delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
@@ -51,20 +50,6 @@ function createIcon(source: string, symbol?: string, symbolTable?: string): L.Di
     });
 }
 
-function FlyToSelected({position}: { position: Position | null }) {
-    const map = useMap();
-    const prev = useRef<string | null>(null);
-
-    useEffect(() => {
-        if (position && position.radioId !== prev.current) {
-            map.flyTo([position.lat, position.lon], 14, {duration: 1.2});
-            prev.current = position.radioId;
-        }
-    }, [map, position]);
-
-    return null;
-}
-
 interface Props {
     positions: Map<string, Position>;
     history: Map<string, Position[]>;
@@ -97,10 +82,131 @@ const TILE_LAYERS = {
 
 type TileLayerKey = keyof typeof TILE_LAYERS;
 
+function escapeHtml(value: string): string {
+    return value
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+}
+
+function buildPopupHtml(pos: Position): string {
+    const rows = [
+        ['Lat', pos.lat.toFixed(5)],
+        ['Lon', pos.lon.toFixed(5)],
+        ['Alt', pos.altitude !== undefined ? `${pos.altitude} m` : '—'],
+        ['Speed', pos.speed !== undefined ? `${pos.speed.toFixed(2)} km/h` : '—'],
+        ['Course', pos.course !== undefined ? `${pos.course}°` : '—'],
+        ['Comment', pos.comment || '—'],
+        ['Source', pos.source],
+        ['Updated', new Date(pos.timestamp).toLocaleTimeString()],
+    ];
+
+    return `
+        <div class="text-sm font-mono space-y-0.5">
+            <div class="font-bold text-base mb-1">${escapeHtml(pos.callsign)}</div>
+            ${rows.map(([label, value]) => `<div><span class="text-gray-500">${label}:</span> ${escapeHtml(value)}</div>`).join('')}
+        </div>
+    `;
+}
+
+function tileLayerFor(key: TileLayerKey): L.TileLayer {
+    const layer = TILE_LAYERS[key];
+    return L.tileLayer(layer.url, {
+        attribution: layer.attribution,
+        maxZoom: layer.maxZoom,
+        ...( 'maxNativeZoom' in layer ? { maxNativeZoom: layer.maxNativeZoom } : {}),
+    });
+}
+
 export default function Map({positions, history, selectedId, activeSources = []}: Props) {
-    const selected = selectedId ? positions.get(selectedId) ?? null : null;
-    const devices = Array.from(positions.values());
     const [tileLayer, setTileLayer] = useState<TileLayerKey>('street');
+    const containerRef = useRef<HTMLDivElement | null>(null);
+    const mapRef = useRef<L.Map | null>(null);
+    const baseLayerRef = useRef<L.TileLayer | null>(null);
+    const markersLayerRef = useRef<L.LayerGroup | null>(null);
+    const trailsLayerRef = useRef<L.LayerGroup | null>(null);
+    const selectedRef = useRef<string | null>(null);
+
+    useEffect(() => {
+        if (!containerRef.current || mapRef.current) return;
+
+        const container = containerRef.current as HTMLDivElement & { _leaflet_id?: unknown };
+        if (container._leaflet_id) {
+            delete container._leaflet_id;
+        }
+
+        const map = L.map(container, {
+            center: [43.8563, 18.4131],
+            zoom: 13,
+            zoomControl: true,
+        });
+
+        const baseLayer = tileLayerFor(tileLayer).addTo(map);
+        const trailsLayer = L.layerGroup().addTo(map);
+        const markersLayer = L.layerGroup().addTo(map);
+
+        mapRef.current = map;
+        baseLayerRef.current = baseLayer;
+        trailsLayerRef.current = trailsLayer;
+        markersLayerRef.current = markersLayer;
+
+        return () => {
+            baseLayerRef.current = null;
+            trailsLayerRef.current = null;
+            markersLayerRef.current = null;
+            selectedRef.current = null;
+            map.remove();
+            mapRef.current = null;
+        };
+        // Intentionally run once on mount/unmount.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    useEffect(() => {
+        if (!mapRef.current || !baseLayerRef.current) return;
+
+        const map = mapRef.current;
+        map.removeLayer(baseLayerRef.current);
+        baseLayerRef.current = tileLayerFor(tileLayer).addTo(map);
+    }, [tileLayer]);
+
+    useEffect(() => {
+        if (!markersLayerRef.current || !trailsLayerRef.current) return;
+
+        markersLayerRef.current.clearLayers();
+        trailsLayerRef.current.clearLayers();
+
+        for (const pos of positions.values()) {
+            const trail = history.get(pos.radioId) ?? [];
+            const trailCoords = trail.map(p => [p.lat, p.lon] as [number, number]);
+
+            if (trailCoords.length > 1) {
+                L.polyline(trailCoords, {
+                    color: TRACE_COLOR[pos.source] ?? '#6b7280',
+                    weight: 4,
+                    opacity: 1,
+                }).addTo(trailsLayerRef.current);
+            }
+
+            const marker = L.marker([pos.lat, pos.lon], {
+                icon: createIcon(pos.source, pos.symbol, pos.symbolTable),
+            }).addTo(markersLayerRef.current);
+
+            marker.bindPopup(buildPopupHtml(pos));
+        }
+    }, [positions, history]);
+
+    useEffect(() => {
+        if (!mapRef.current || !selectedId || selectedRef.current === selectedId) return;
+
+        const selected = positions.get(selectedId);
+        if (selected) {
+            mapRef.current.flyTo([selected.lat, selected.lon], 14, {duration: 1.2});
+            selectedRef.current = selectedId;
+        }
+    }, [selectedId, positions]);
 
     return (
         <div className="relative w-full h-full">
@@ -137,68 +243,7 @@ export default function Map({positions, history, selectedId, activeSources = []}
                 ))}
             </div>
 
-            <MapContainer
-                center={[43.8563, 18.4131]}
-                zoom={13}
-                maxZoom={19}
-                className="w-full h-full"
-            >
-                <TileLayer
-                    key={tileLayer}
-                    attribution={TILE_LAYERS[tileLayer].attribution}
-                    url={TILE_LAYERS[tileLayer].url}
-                    maxZoom={TILE_LAYERS[tileLayer].maxZoom}
-                    {...('maxNativeZoom' in TILE_LAYERS[tileLayer] && {
-                        maxNativeZoom: (TILE_LAYERS[tileLayer] as {
-                            maxNativeZoom: number
-                        }).maxNativeZoom
-                    })}
-                />
-
-                <FlyToSelected position={selected}/>
-
-                {devices.map(pos => {
-                    const trail = history.get(pos.radioId) ?? [];
-                    const trailCoords = trail.map(p => [p.lat, p.lon] as [number, number]);
-
-                    return (
-                        <div key={pos.radioId}>
-                            {trailCoords.length > 1 && (
-                                <Polyline
-                                    positions={trailCoords}
-                                    color={TRACE_COLOR[pos.source] ?? '#6b7280'}
-                                    weight={4}
-                                    opacity={1}
-                                />
-                            )}
-                            <Marker position={[pos.lat, pos.lon]}
-                                    icon={createIcon(pos.source, pos.symbol, pos.symbolTable)}>
-                                <Popup>
-                                    <div className="text-sm font-mono space-y-0.5">
-                                        <div className="font-bold text-base mb-1">{pos.callsign}</div>
-                                        <div><span className="text-gray-500">Lat:</span> {pos.lat.toFixed(5)}</div>
-                                        <div><span className="text-gray-500">Lon:</span> {pos.lon.toFixed(5)}</div>
-                                        <div><span
-                                            className="text-gray-500">Alt:</span> {pos.altitude !== undefined ? `${pos.altitude} m` : '—'}
-                                        </div>
-                                        <div><span
-                                            className="text-gray-500">Speed:</span> {pos.speed !== undefined ? `${pos.speed.toFixed(2)} km/h` : '—'}
-                                        </div>
-                                        <div><span
-                                            className="text-gray-500">Course:</span> {pos.course !== undefined ? `${pos.course}°` : '—'}
-                                        </div>
-                                        <div><span className="text-gray-500">Comment:</span> {pos.comment || '—'}</div>
-                                        <div><span className="text-gray-500">Source:</span> {pos.source}</div>
-                                        <div><span
-                                            className="text-gray-500">Updated:</span> {new Date(pos.timestamp).toLocaleTimeString()}
-                                        </div>
-                                    </div>
-                                </Popup>
-                            </Marker>
-                        </div>
-                    );
-                })}
-            </MapContainer>
+            <div ref={containerRef} className="w-full h-full" />
         </div>
     );
 }
