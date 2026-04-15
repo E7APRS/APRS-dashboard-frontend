@@ -179,15 +179,21 @@ export default function Map({positions, history, selectedId, activeSources = []}
         trailsLayerRef.current.clearLayers();
 
         for (const pos of positions.values()) {
-            const trail = history.get(pos.radioId) ?? [];
-            const trailCoords = trail.map(p => [p.lat, p.lon] as [number, number]);
+            // Trail only for the selected device, and only if location actually changed
+            if (selectedId && pos.radioId === selectedId) {
+                const trail = history.get(pos.radioId) ?? [];
+                const unique = trail.filter((p, i, arr) =>
+                    i === 0 || p.lat !== arr[i - 1].lat || p.lon !== arr[i - 1].lon,
+                );
+                const trailCoords = unique.map(p => [p.lat, p.lon] as [number, number]);
 
-            if (trailCoords.length > 1) {
-                L.polyline(trailCoords, {
-                    color: TRACE_COLOR[pos.source] ?? '#6b7280',
-                    weight: 4,
-                    opacity: 1,
-                }).addTo(trailsLayerRef.current);
+                if (trailCoords.length > 1) {
+                    L.polyline(trailCoords, {
+                        color: TRACE_COLOR[pos.source] ?? '#6b7280',
+                        weight: 4,
+                        opacity: 1,
+                    }).addTo(trailsLayerRef.current);
+                }
             }
 
             const marker = L.marker([pos.lat, pos.lon], {
@@ -196,7 +202,7 @@ export default function Map({positions, history, selectedId, activeSources = []}
 
             marker.bindPopup(buildPopupHtml(pos));
         }
-    }, [positions, history]);
+    }, [positions, history, selectedId]);
 
     useEffect(() => {
         if (!mapRef.current || !selectedId || selectedRef.current === selectedId) return;
