@@ -93,15 +93,12 @@ export default function Home() {
             applyPosition(pos);
         });
 
-        // If socket is already connected (e.g. navigated back from /profile),
-        // sync state and fetch data via REST — more reliable than socket re-request
+        // If socket is already connected (e.g. navigated back from /profile,
+        // or React strict-mode remount), request fresh snapshots so we get
+        // both latest positions AND full history trails.
         if (socket.connected) {
             setConnected(true);
-            const headers = {Authorization: `Bearer ${session.access_token}`};
-            fetch(`${BACKEND_URL}/api/positions/latest`, {headers})
-                .then(r => r.json())
-                .then((data: Position[]) => data.forEach(applyPosition))
-                .catch(() => {});
+            socket.emit('snapshots:request');
         }
 
         return () => {
