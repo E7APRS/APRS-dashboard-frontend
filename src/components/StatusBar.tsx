@@ -2,18 +2,22 @@
 
 import Image from 'next/image';
 import {ThemeToggle} from './ThemeToggle';
+import UserMenu from './UserMenu';
+import {UserProfile} from '@/lib/types';
 
 interface Props {
     connected: boolean;
     activeSources: string[];
     deviceCount: number;
-    onSignOut?: () => void;
+    profile: UserProfile;
+    onSignOut: () => void;
+    onProfile: () => void;
 }
 
-export default function StatusBar({connected, activeSources, deviceCount, onSignOut}: Props) {
+export default function StatusBar({connected, activeSources, deviceCount, profile, onSignOut, onProfile}: Props) {
     return (
         <header
-            className="flex items-center gap-4 px-4 py-0 bg-white dark:bg-brand-onyx border-b border-gray-500/85 dark:border-gray-500/85 text-xs text-gray-600 dark:text-gray-400 h-20 flex-shrink-0 shadow-sm dark:shadow-none">
+            className="relative z-[1100] flex items-center gap-4 px-4 py-0 bg-white dark:bg-brand-onyx border-b border-gray-500/85 dark:border-gray-500/85 text-xs text-gray-600 dark:text-gray-400 h-20 flex-shrink-0 shadow-sm dark:shadow-none">
             {/* Brand identity */}
             <div className="flex items-center gap-2.5 mr-2">
                 <Image
@@ -69,18 +73,7 @@ export default function StatusBar({connected, activeSources, deviceCount, onSign
 
             <div className="ml-auto flex items-center gap-3">
                 <ThemeToggle/>
-
-                {onSignOut && (
-                    <>
-                        <span className="text-gray-500 dark:text-gray-500">|</span>
-                        <button
-                            onClick={onSignOut}
-                            className="text-[15px] text-gray-600 dark:text-gray-300 hover:text-brand-dark-orange dark:hover:text-brand-orange transition-colors font-rajdhani tracking-wide focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-dark-orange dark:focus-visible:ring-brand-orange focus-visible:ring-offset-1 focus-visible:ring-offset-white dark:focus-visible:ring-offset-brand-onyx rounded"
-                        >
-                            Sign out
-                        </button>
-                    </>
-                )}
+                <UserMenu profile={profile} onSignOut={onSignOut} onProfile={onProfile} />
             </div>
         </header>
     );

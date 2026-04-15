@@ -18,7 +18,7 @@ const HISTORY_LIMIT = 50;
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3001';
 
 export default function Home() {
-    const {session, loading} = useAuth();
+    const {session, profile, loading, profileLoading} = useAuth();
     const router = useRouter();
     const supabase = createClient();
 
@@ -29,12 +29,14 @@ export default function Home() {
     const [activeSources, setActiveSources] = useState<string[]>([]);
     const initialCentered = useRef(false);
 
-    // Redirect to log in if not authenticated
+    // Redirect to login if not authenticated, or to complete-profile if no profile
     useEffect(() => {
         if (!loading && !session) {
             router.replace('/login');
+        } else if (!loading && session && !profileLoading && !profile) {
+            router.replace('/complete-profile');
         }
-    }, [session, loading, router]);
+    }, [session, profile, loading, profileLoading, router]);
 
     const applyPosition = useCallback((pos: Position) => {
         setPositions(prev => new Map(prev).set(pos.radioId, pos));
@@ -91,6 +93,17 @@ export default function Home() {
             applyPosition(pos);
         });
 
+        // If socket is already connected (e.g. navigated back from /profile),
+        // sync state and fetch data via REST — more reliable than socket re-request
+        if (socket.connected) {
+            setConnected(true);
+            const headers = {Authorization: `Bearer ${session.access_token}`};
+            fetch(`${BACKEND_URL}/api/positions/latest`, {headers})
+                .then(r => r.json())
+                .then((data: Position[]) => data.forEach(applyPosition))
+                .catch(() => {});
+        }
+
         return () => {
             socket.off('connect');
             socket.off('disconnect');
@@ -106,7 +119,11 @@ export default function Home() {
         router.replace('/login');
     }
 
-    if (loading || !session) {
+    function handleProfile() {
+        router.push('/profile');
+    }
+
+    if (loading || !session || profileLoading || !profile) {
         return <div
             className="flex items-center justify-center h-screen bg-gray-50 dark:bg-brand-onyx text-gray-600 dark:text-gray-300">Loading...</div>;
     }
@@ -117,7 +134,9 @@ export default function Home() {
                 connected={connected}
                 activeSources={activeSources}
                 deviceCount={positions.size}
+                profile={profile}
                 onSignOut={handleSignOut}
+                onProfile={handleProfile}
             />
 
             <div className="flex flex-1 overflow-hidden">

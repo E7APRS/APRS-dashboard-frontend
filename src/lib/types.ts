@@ -10,6 +10,22 @@ export interface Position {
     symbol?: string;       // APRS symbol code e.g. '-', '#', '['
     symbolTable?: string;  // '/' = primary table, '\' = alternate table
     timestamp: string;
-    source: 'aprsfi' | 'aprsis' | 'dmr' | 'fixed';
+    source: 'aprsfi' | 'aprsis' | 'dmr' | 'fixed' | 'relay';
+}
+
+export interface UserProfile {
+    id: string;
+    authId: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    address: string;
+    city: string;
+    country: string;
+    qthLocator: string;
+    callsign: string;
+    avatarUrl: string | null;
+    createdAt: string;
+    updatedAt: string;
 }
 
