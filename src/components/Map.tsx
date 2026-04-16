@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useImperativeHandle, forwardRef, useRef, useState } from 'react';
 import L from 'leaflet';
 import { Position } from '@/lib/types';
 import { SOURCE_COLOR, TRACE_COLOR } from '@/lib/colors';
@@ -120,7 +120,11 @@ function tileLayerFor(key: TileLayerKey): L.TileLayer {
     });
 }
 
-export default function Map({positions, history, selectedId, activeSources = []}: Props) {
+export interface MapHandle {
+    getMap(): L.Map | null;
+}
+
+function MapInner({positions, history, selectedId, activeSources = []}: Props, ref: React.ForwardedRef<MapHandle>) {
     const [tileLayer, setTileLayer] = useState<TileLayerKey>('street');
     const containerRef = useRef<HTMLDivElement | null>(null);
     const mapRef = useRef<L.Map | null>(null);
@@ -128,6 +132,10 @@ export default function Map({positions, history, selectedId, activeSources = []}
     const markersLayerRef = useRef<L.LayerGroup | null>(null);
     const trailsLayerRef = useRef<L.LayerGroup | null>(null);
     const selectedRef = useRef<string | null>(null);
+
+    useImperativeHandle(ref, () => ({
+        getMap: () => mapRef.current,
+    }));
 
     useEffect(() => {
         if (!containerRef.current || mapRef.current) return;
@@ -253,3 +261,6 @@ export default function Map({positions, history, selectedId, activeSources = []}
         </div>
     );
 }
+
+const Map = forwardRef(MapInner);
+export default Map;

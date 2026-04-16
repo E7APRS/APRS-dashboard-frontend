@@ -1,6 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import type L from 'leaflet';
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {useRouter} from 'next/navigation';
 import {disconnectSocket, getSocket} from '@/lib/socket';
@@ -8,7 +9,11 @@ import {Position} from '@/lib/types';
 import DeviceList from '@/components/DeviceList';
 import StatusBar from '@/components/StatusBar';
 import Legend from '@/components/Legend';
+import TimeSlider from '@/components/TimeSlider';
+import GeofencePanel from '@/components/GeofencePanel';
+import CapAlerts from '@/components/CapAlerts';
 import {useAuth} from '@/components/AuthProvider';
+import type {MapHandle} from '@/components/Map';
 import {createClient} from '@/lib/supabase';
 
 // Leaflet cannot be SSR-rendered (rename avoids shadowing global Map<K,V>)
@@ -27,7 +32,25 @@ export default function Home() {
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [connected, setConnected] = useState(false);
     const [activeSources, setActiveSources] = useState<string[]>([]);
+    const [historyMode, setHistoryMode] = useState(false);
+    const [geofenceAlerts, setGeofenceAlerts] = useState<Array<{type: 'enter' | 'exit'; radioId: string; callsign: string; fenceName: string; timestamp: string}>>([]);
+    const [capAlertsVisible, setCapAlertsVisible] = useState(false);
+    const livePositionsRef = useRef<Map<string, Position>>(new Map());
+    const liveHistoryRef = useRef<Map<string, Position[]>>(new Map());
+    const mapHandleRef = useRef<MapHandle>(null);
+    const leafletMapRef = useRef<L.Map | null>(null);
     const initialCentered = useRef(false);
+
+    // Keep leafletMapRef in sync with the dynamically loaded map component
+    useEffect(() => {
+        const interval = setInterval(() => {
+            const map = mapHandleRef.current?.getMap() ?? null;
+            if (map && !leafletMapRef.current) {
+                leafletMapRef.current = map;
+            }
+        }, 200);
+        return () => clearInterval(interval);
+    }, []);
 
     // Redirect to login if not authenticated, or to complete-profile if no profile
     useEffect(() => {
@@ -39,13 +62,43 @@ export default function Home() {
     }, [session, profile, loading, profileLoading, router]);
 
     const applyPosition = useCallback((pos: Position) => {
-        setPositions(prev => new Map(prev).set(pos.radioId, pos));
-        setHistory(prev => {
-            const map = new Map(prev);
-            const trail = [...(map.get(pos.radioId) ?? []), pos];
-            if (trail.length > HISTORY_LIMIT) trail.shift();
-            return map.set(pos.radioId, trail);
-        });
+        // Always update live refs so we can restore after history mode
+        livePositionsRef.current = new Map(livePositionsRef.current).set(pos.radioId, pos);
+        const liveTrail = [...(liveHistoryRef.current.get(pos.radioId) ?? []), pos];
+        if (liveTrail.length > HISTORY_LIMIT) liveTrail.shift();
+        liveHistoryRef.current = new Map(liveHistoryRef.current).set(pos.radioId, liveTrail);
+
+        // Only update display state if in live mode
+        if (!historyMode) {
+            setPositions(prev => new Map(prev).set(pos.radioId, pos));
+            setHistory(prev => {
+                const map = new Map(prev);
+                const trail = [...(map.get(pos.radioId) ?? []), pos];
+                if (trail.length > HISTORY_LIMIT) trail.shift();
+                return map.set(pos.radioId, trail);
+            });
+        }
+    }, [historyMode]);
+
+    const handleHistoryData = useCallback((data: Position[], isLive: boolean) => {
+        if (isLive) {
+            setHistoryMode(false);
+            setPositions(new Map(livePositionsRef.current));
+            setHistory(new Map(liveHistoryRef.current));
+            return;
+        }
+        setHistoryMode(true);
+        // Group positions by radioId, use latest as current position
+        const posMap = new Map<string, Position>();
+        const histMap = new Map<string, Position[]>();
+        for (const pos of data) {
+            posMap.set(pos.radioId, pos);
+            const trail = histMap.get(pos.radioId) ?? [];
+            trail.push(pos);
+            histMap.set(pos.radioId, trail);
+        }
+        setPositions(posMap);
+        setHistory(histMap);
     }, []);
 
     // Fetch status — active sources + feature flags
@@ -80,17 +133,30 @@ export default function Home() {
         });
 
         socket.on('history:snapshot', (data: Record<string, Position[]>) => {
-            setHistory(prev => {
-                const map = new Map(prev);
-                for (const [radioId, trail] of Object.entries(data)) {
-                    map.set(radioId, trail);
-                }
-                return map;
-            });
+            // Always update live refs
+            for (const [radioId, trail] of Object.entries(data)) {
+                liveHistoryRef.current = new Map(liveHistoryRef.current).set(radioId, trail);
+            }
+            // Only update display if not in history playback mode
+            if (!historyMode) {
+                setHistory(prev => {
+                    const map = new Map(prev);
+                    for (const [radioId, trail] of Object.entries(data)) {
+                        map.set(radioId, trail);
+                    }
+                    return map;
+                });
+            }
         });
 
         socket.on('position:update', (pos: Position) => {
             applyPosition(pos);
+        });
+
+        socket.on('geofence:alert', (alert: {type: 'enter' | 'exit'; radioId: string; callsign: string; fenceName: string; timestamp: string}) => {
+            setGeofenceAlerts(prev => [...prev.slice(-9), alert]);
+            // Auto-dismiss after 10 seconds
+            setTimeout(() => setGeofenceAlerts(prev => prev.filter(a => a !== alert)), 10000);
         });
 
         // If socket is already connected (e.g. navigated back from /profile,
@@ -107,6 +173,7 @@ export default function Home() {
             socket.off('positions:snapshot');
             socket.off('history:snapshot');
             socket.off('position:update');
+            socket.off('geofence:alert');
         };
     }, [session, applyPosition]);
 
@@ -154,12 +221,37 @@ export default function Home() {
                 {/* Map */}
                 <main className="flex-1 relative">
                     <TrackingMap
+                        ref={mapHandleRef}
                         positions={positions}
                         history={history}
                         selectedId={selectedId}
                         activeSources={activeSources}
                     />
                     <Legend activeSources={activeSources}/>
+                    <GeofencePanel
+                        accessToken={session.access_token}
+                        mapRef={leafletMapRef}
+                        socketAlerts={geofenceAlerts}
+                    />
+                    <button
+                        onClick={() => setCapAlertsVisible(v => !v)}
+                        className={`absolute top-[72px] right-2 z-[1000] px-3 py-1 text-xs rounded shadow border transition-colors ${
+                            capAlertsVisible
+                                ? 'bg-red-500 text-white border-red-500'
+                                : 'bg-white dark:bg-[#111] text-gray-700 dark:text-gray-300 border-gray-500/85 dark:border-gray-500/85 hover:bg-gray-100 dark:hover:bg-white/10'
+                        }`}
+                    >
+                        CAP Alerts
+                    </button>
+                    <CapAlerts
+                        accessToken={session.access_token}
+                        mapRef={leafletMapRef}
+                        visible={capAlertsVisible}
+                    />
+                    <TimeSlider
+                        accessToken={session.access_token}
+                        onHistoryData={handleHistoryData}
+                    />
                 </main>
             </div>
         </div>

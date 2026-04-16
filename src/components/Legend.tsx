@@ -7,6 +7,10 @@ const SOURCE_LABEL: Record<string, string> = {
     aprsfi: 'APRS.fi',
     aprsis: 'APRS-IS',
     dmr: 'DMR',
+    relay: 'LoRa Relay',
+    meshtastic: 'Meshtastic',
+    mqtt: 'MQTT',
+    fixed: 'Fixed',
 };
 
 interface Props {

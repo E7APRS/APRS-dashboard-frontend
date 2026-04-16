@@ -31,6 +31,7 @@ export default function RootLayout({children}: { children: React.ReactNode }) {
             <link rel="icon" href="/e7aprs.ico" sizes="any"/>
             <link rel="icon" type="image/png" href="/e7aprs.png"/>
             <link rel="apple-touch-icon" href="/e7aprs.png"/>
+            <link rel="manifest" href="/manifest.json"/>
             <meta name="color-scheme" content="dark light"/>
             <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FF6600"/>
             <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1A1A1A"/>
