@@ -13,11 +13,18 @@ interface Props {
 type SortField = 'name' | 'time';
 type SortDir = 'asc' | 'desc';
 
+const STALE_THRESHOLD_MS = 10 * 60 * 1000; // 10 minutes
+
 function timeSince(iso: string): string {
     const seconds = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
     if (seconds < 60) return `${seconds}s ago`;
     if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-    return `${Math.floor(seconds / 3600)}h ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+    return `${Math.floor(seconds / 86400)}d ago`;
+}
+
+function isStale(iso: string): boolean {
+    return Date.now() - new Date(iso).getTime() > STALE_THRESHOLD_MS;
 }
 
 export default function DeviceList({positions, selectedId, onSelect}: Props) {
@@ -92,11 +99,14 @@ export default function DeviceList({positions, selectedId, onSelect}: Props) {
                 <ul className="divide-y divide-gray-500/85 dark:divide-gray-500/85">
                     {devices.map(pos => {
                         const sourceColor = SOURCE_COLOR[pos.source] ?? '#6b7280';
+                        const stale = isStale(pos.timestamp);
 
                         return (
                             <li
                                 key={pos.radioId}
                                 className={`p-3 cursor-pointer transition-colors ${
+                                    stale ? 'opacity-50' : ''
+                                } ${
                                     selectedId === pos.radioId
                                         ? 'bg-brand-orange/10 border-l-2 border-brand-dark-orange dark:border-brand-orange'
                                         : 'hover:bg-gray-50 dark:hover:bg-white/5'
@@ -105,13 +115,16 @@ export default function DeviceList({positions, selectedId, onSelect}: Props) {
                             >
                                 <div className="flex items-center justify-between">
                                     <span
-                                        className="font-mono font-semibold text-brand-onyx dark:text-white">{pos.callsign}</span>
-                                    <span
-                                        className="text-xs text-black px-1.5 py-0.5 rounded"
-                                        style={{backgroundColor: sourceColor}}
-                                    >
-                  {pos.source}
-                </span>
+                                        className={`font-mono font-semibold ${stale ? 'text-gray-400 dark:text-gray-500' : 'text-brand-onyx dark:text-white'}`}>{pos.callsign}</span>
+                                    <div className="flex items-center gap-1">
+                                        {stale && <span className="text-[10px] text-gray-400 dark:text-gray-500 italic">stale</span>}
+                                        <span
+                                            className="text-xs text-black px-1.5 py-0.5 rounded"
+                                            style={{backgroundColor: sourceColor, opacity: stale ? 0.5 : 1}}
+                                        >
+                                          {pos.source}
+                                        </span>
+                                    </div>
                                 </div>
                                 <div className="text-xs text-gray-600 dark:text-gray-300 mt-0.5">
                                     {pos.lat.toFixed(5)}, {pos.lon.toFixed(5)}

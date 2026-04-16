@@ -13,6 +13,15 @@ export interface Position {
     source: 'aprsfi' | 'aprsis' | 'dmr' | 'fixed' | 'relay';
 }
 
+export interface Device {
+    radioId: string;
+    callsign: string;
+    lastSeen: string;
+    lastPosition: Position;
+    stale?: boolean;
+    lastSeenAgeMs?: number;
+}
+
 export interface UserProfile {
     id: string;
     authId: string;
