@@ -14,7 +14,13 @@ interface Props {
 
 export default function UserMenu({ profile, onSignOut, onProfile, onSettings }: Props) {
     const [open, setOpen] = useState(false);
+    const [imgError, setImgError] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
+
+    // Reset error state when avatarUrl changes (e.g. after upload)
+    useEffect(() => {
+        setImgError(false);
+    }, [profile.avatarUrl]);
 
     // Close on outside click
     useEffect(() => {
@@ -37,7 +43,7 @@ export default function UserMenu({ profile, onSignOut, onProfile, onSettings }: 
     }, [open]);
 
     const avatarSrc = profile.avatarUrl
-        ? `${BACKEND_URL}${profile.avatarUrl}`
+        ? `${BACKEND_URL}${profile.avatarUrl}?v=${encodeURIComponent(profile.updatedAt)}`
         : null;
 
     const initials = `${profile.firstName.charAt(0)}${profile.lastName.charAt(0)}`.toUpperCase();
@@ -49,11 +55,12 @@ export default function UserMenu({ profile, onSignOut, onProfile, onSettings }: 
                 className="w-10 h-10 rounded-full overflow-hidden border-2 border-gray-300 dark:border-gray-600 hover:border-brand-dark-orange dark:hover:border-brand-orange transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-dark-orange dark:focus-visible:ring-brand-orange focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-brand-onyx flex items-center justify-center bg-gray-200 dark:bg-gray-700"
                 aria-label="User menu"
             >
-                {avatarSrc ? (
+                {avatarSrc && !imgError ? (
                     <img
                         src={avatarSrc}
                         alt={`${profile.firstName} ${profile.lastName}`}
                         className="w-full h-full object-cover"
+                        onError={() => setImgError(true)}
                     />
                 ) : (
                     <span className="text-sm font-semibold text-gray-600 dark:text-gray-300 font-rajdhani select-none">

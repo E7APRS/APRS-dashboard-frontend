@@ -25,6 +25,12 @@ export default function ProfilePage() {
     const [success, setSuccess] = useState('');
     const [saving, setSaving] = useState(false);
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
+    const [imgError, setImgError] = useState(false);
+
+    // Reset image error state when avatar changes (e.g. after upload)
+    useEffect(() => {
+        setImgError(false);
+    }, [profile?.avatarUrl]);
 
     // Populate form once when profile first loads — not on every profile update
     // (avatar upload calls setProfile which would otherwise reset unsaved edits)
@@ -159,7 +165,7 @@ export default function ProfilePage() {
     }
 
     const avatarSrc = profile.avatarUrl
-        ? `${BACKEND_URL}${profile.avatarUrl}`
+        ? `${BACKEND_URL}${profile.avatarUrl}?v=${encodeURIComponent(profile.updatedAt)}`
         : null;
 
     const initials = `${profile.firstName.charAt(0)}${profile.lastName.charAt(0)}`.toUpperCase();
@@ -197,11 +203,12 @@ export default function ProfilePage() {
                     <div className="flex flex-col items-center pt-8 pb-4">
                         <div className="relative group">
                             <div className="w-24 h-24 rounded-full overflow-hidden border-3 border-gray-300 dark:border-gray-600 bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                                {avatarSrc ? (
+                                {avatarSrc && !imgError ? (
                                     <img
                                         src={avatarSrc}
                                         alt="Avatar"
                                         className="w-full h-full object-cover"
+                                        onError={() => setImgError(true)}
                                     />
                                 ) : (
                                     <span className="text-2xl font-bold text-gray-500 dark:text-gray-400 font-rajdhani select-none">
