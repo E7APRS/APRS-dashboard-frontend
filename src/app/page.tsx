@@ -13,6 +13,7 @@ import TimeSlider from '@/components/TimeSlider';
 import GeofencePanel from '@/components/GeofencePanel';
 import CapAlerts from '@/components/CapAlerts';
 import {useAuth} from '@/components/AuthProvider';
+import {loadSettings} from '@/app/settings/page';
 import type {MapHandle} from '@/components/Map';
 import {createClient} from '@/lib/supabase';
 
@@ -35,11 +36,24 @@ export default function Home() {
     const [historyMode, setHistoryMode] = useState(false);
     const [geofenceAlerts, setGeofenceAlerts] = useState<Array<{type: 'enter' | 'exit'; radioId: string; callsign: string; fenceName: string; timestamp: string}>>([]);
     const [capAlertsVisible, setCapAlertsVisible] = useState(false);
+    const [hiddenSources, setHiddenSources] = useState<Set<string>>(new Set());
     const livePositionsRef = useRef<Map<string, Position>>(new Map());
     const liveHistoryRef = useRef<Map<string, Position[]>>(new Map());
     const mapHandleRef = useRef<MapHandle>(null);
     const leafletMapRef = useRef<L.Map | null>(null);
     const initialCentered = useRef(false);
+
+    // Load display settings from localStorage (and refresh on window focus)
+    useEffect(() => {
+        function applySettings() {
+            const s = loadSettings();
+            setCapAlertsVisible(s.capAlerts);
+            setHiddenSources(new Set(s.hiddenSources));
+        }
+        applySettings();
+        window.addEventListener('focus', applySettings);
+        return () => window.removeEventListener('focus', applySettings);
+    }, []);
 
     // Keep leafletMapRef in sync with the dynamically loaded map component
     useEffect(() => {
@@ -187,6 +201,19 @@ export default function Home() {
         router.push('/profile');
     }
 
+    function handleSettings() {
+        router.push('/settings');
+    }
+
+    // Filter positions and sources by user visibility settings
+    const visibleSources = activeSources.filter(s => !hiddenSources.has(s));
+    const filteredPositions = new Map(
+        [...positions].filter(([, pos]) => !hiddenSources.has(pos.source))
+    );
+    const filteredHistory = new Map(
+        [...history].map(([id, trail]) => [id, trail.filter(pos => !hiddenSources.has(pos.source))])
+    );
+
     if (loading || !session || profileLoading || !profile) {
         return <div
             className="flex items-center justify-center h-screen bg-gray-50 dark:bg-brand-onyx text-gray-600 dark:text-gray-300">Loading...</div>;
@@ -196,11 +223,12 @@ export default function Home() {
         <div className="flex flex-col h-screen">
             <StatusBar
                 connected={connected}
-                activeSources={activeSources}
-                deviceCount={positions.size}
+                activeSources={visibleSources}
+                deviceCount={filteredPositions.size}
                 profile={profile}
                 onSignOut={handleSignOut}
                 onProfile={handleProfile}
+                onSettings={handleSettings}
             />
 
             <div className="flex flex-1 overflow-hidden">
@@ -212,7 +240,7 @@ export default function Home() {
                         Devices
                     </div>
                     <DeviceList
-                        positions={positions}
+                        positions={filteredPositions}
                         selectedId={selectedId}
                         onSelect={setSelectedId}
                     />
@@ -222,27 +250,17 @@ export default function Home() {
                 <main className="flex-1 relative">
                     <TrackingMap
                         ref={mapHandleRef}
-                        positions={positions}
-                        history={history}
+                        positions={filteredPositions}
+                        history={filteredHistory}
                         selectedId={selectedId}
-                        activeSources={activeSources}
+                        activeSources={visibleSources}
                     />
-                    <Legend activeSources={activeSources}/>
+                    <Legend activeSources={visibleSources}/>
                     <GeofencePanel
                         accessToken={session.access_token}
                         mapRef={leafletMapRef}
                         socketAlerts={geofenceAlerts}
                     />
-                    <button
-                        onClick={() => setCapAlertsVisible(v => !v)}
-                        className={`absolute top-[72px] right-2 z-[1000] px-3 py-1 text-xs rounded shadow border transition-colors ${
-                            capAlertsVisible
-                                ? 'bg-red-500 text-white border-red-500'
-                                : 'bg-white dark:bg-[#111] text-gray-700 dark:text-gray-300 border-gray-500/85 dark:border-gray-500/85 hover:bg-gray-100 dark:hover:bg-white/10'
-                        }`}
-                    >
-                        CAP Alerts
-                    </button>
                     <CapAlerts
                         accessToken={session.access_token}
                         mapRef={leafletMapRef}

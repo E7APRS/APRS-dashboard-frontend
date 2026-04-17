@@ -39,14 +39,23 @@ export default function CapAlerts({ accessToken, mapRef, visible }: Props) {
 
     const fetchAndRender = useCallback(async () => {
         const map = mapRef.current;
-        if (!map || !visible) return;
+        if (!map || !visible || !map.getContainer()) return;
 
         const L = (await import('leaflet')).default;
 
+        // Verify the map is still valid (not destroyed by React remount)
+        try { map.getSize(); } catch { return; }
+
+        if (layerGroupRef.current) {
+            try {
+                layerGroupRef.current.clearLayers();
+            } catch {
+                layerGroupRef.current = null;
+            }
+        }
         if (!layerGroupRef.current) {
             layerGroupRef.current = L.layerGroup().addTo(map);
         }
-        layerGroupRef.current.clearLayers();
 
         try {
             const res = await fetch(`${BACKEND_URL}/api/cap/alerts`, {

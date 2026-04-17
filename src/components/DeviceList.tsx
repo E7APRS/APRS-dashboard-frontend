@@ -1,8 +1,9 @@
 'use client';
 
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {SOURCE_COLOR} from '@/lib/colors';
 import {Position} from '@/lib/types';
+import {loadSettings} from '@/app/settings/page';
 
 interface Props {
     positions: Map<string, Position>;
@@ -13,8 +14,6 @@ interface Props {
 type SortField = 'name' | 'time';
 type SortDir = 'asc' | 'desc';
 
-const STALE_THRESHOLD_MS = 10 * 60 * 1000; // 10 minutes
-
 function timeSince(iso: string): string {
     const seconds = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
     if (seconds < 60) return `${seconds}s ago`;
@@ -23,14 +22,21 @@ function timeSince(iso: string): string {
     return `${Math.floor(seconds / 86400)}d ago`;
 }
 
-function isStale(iso: string): boolean {
-    return Date.now() - new Date(iso).getTime() > STALE_THRESHOLD_MS;
-}
-
 export default function DeviceList({positions, selectedId, onSelect}: Props) {
     const [sortField, setSortField] = useState<SortField>('name');
     const [sortDir, setSortDir] = useState<SortDir>('asc');
     const [query, setQuery] = useState('');
+    const [staleMs, setStaleMs] = useState(loadSettings().staleTimeout * 60_000);
+
+    useEffect(() => {
+        function refresh() { setStaleMs(loadSettings().staleTimeout * 60_000); }
+        window.addEventListener('focus', refresh);
+        return () => window.removeEventListener('focus', refresh);
+    }, []);
+
+    function isStale(iso: string): boolean {
+        return Date.now() - new Date(iso).getTime() > staleMs;
+    }
 
     function toggleSort(field: SortField) {
         if (sortField === field) {

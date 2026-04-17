@@ -16,10 +16,11 @@ export default function LoginPage() {
     const [loading, setLoading] = useState(false);
 
     async function signInWithGoogle() {
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || window.location.origin;
         await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: `${window.location.origin}/auth/callback`,
+                redirectTo: `${baseUrl}/auth/callback`,
             },
         });
     }

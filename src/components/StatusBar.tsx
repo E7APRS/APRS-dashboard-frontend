@@ -1,7 +1,6 @@
 'use client';
 
 import Image from 'next/image';
-import {ThemeToggle} from './ThemeToggle';
 import UserMenu from './UserMenu';
 import {UserProfile} from '@/lib/types';
 
@@ -12,9 +11,10 @@ interface Props {
     profile: UserProfile;
     onSignOut: () => void;
     onProfile: () => void;
+    onSettings: () => void;
 }
 
-export default function StatusBar({connected, activeSources, deviceCount, profile, onSignOut, onProfile}: Props) {
+export default function StatusBar({connected, activeSources, deviceCount, profile, onSignOut, onProfile, onSettings}: Props) {
     return (
         <header
             className="relative z-[1100] flex items-center gap-4 px-4 py-0 bg-white dark:bg-brand-onyx border-b border-gray-500/85 dark:border-gray-500/85 text-xs text-gray-600 dark:text-gray-400 h-20 flex-shrink-0 shadow-sm dark:shadow-none">
@@ -72,8 +72,7 @@ export default function StatusBar({connected, activeSources, deviceCount, profil
             </div>
 
             <div className="ml-auto flex items-center gap-3">
-                <ThemeToggle/>
-                <UserMenu profile={profile} onSignOut={onSignOut} onProfile={onProfile} />
+                <UserMenu profile={profile} onSignOut={onSignOut} onProfile={onProfile} onSettings={onSettings} />
             </div>
         </header>
     );
