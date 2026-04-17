@@ -65,6 +65,7 @@ Fallback to a coloured circle if no symbol data is present (e.g. devices loaded 
 | Blue   | APRS.fi        |
 | Purple | APRS-IS        |
 | Green  | DMR            |
+| Orange | Relay (LoRa)   |
 | Gray   | Fixed stations |
 
 ## WebSocket Events
@@ -90,7 +91,7 @@ interface Position {
     symbol?: string;       // APRS symbol code e.g. '-', '[', '>'
     symbolTable?: string;       // '/' = primary, '\' = alternate
     timestamp: string;
-    source: 'aprsfi' | 'aprsis' | 'dmr' | 'fixed';
+    source: 'aprsfi' | 'aprsis' | 'dmr' | 'relay' | 'fixed';
 }
 ```
 
