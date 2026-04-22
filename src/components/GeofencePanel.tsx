@@ -83,10 +83,12 @@ export default function GeofencePanel({ accessToken, mapRef, socketAlerts }: Pro
                 }
             }
             if (!layerGroupRef.current) {
-                layerGroupRef.current = L.layerGroup().addTo(map);
+                try {
+                    layerGroupRef.current = L.layerGroup().addTo(map);
+                } catch { return; }
             }
 
-            if (!visible) return;
+            if (!visible || !layerGroupRef.current) return;
 
             for (const fence of fences) {
                 if (!fence.active) continue;
@@ -98,7 +100,7 @@ export default function GeofencePanel({ accessToken, mapRef, socketAlerts }: Pro
                     weight: 2,
                     dashArray: '6 4',
                 }).bindPopup(`<b>${fence.name}</b><br/>${fence.description}`)
-                  .addTo(layerGroupRef.current!);
+                  .addTo(layerGroupRef.current);
             }
         });
     }, [visible, fences, mapRef]);
