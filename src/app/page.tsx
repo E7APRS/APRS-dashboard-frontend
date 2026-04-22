@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import type L from 'leaflet';
-import {useCallback, useEffect, useRef, useState} from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useRouter} from 'next/navigation';
 import {disconnectSocket, getSocket} from '@/lib/socket';
 import {Position} from '@/lib/types';
@@ -39,16 +39,24 @@ export default function Home() {
     const [hiddenSources, setHiddenSources] = useState<Set<string>>(new Set());
     const livePositionsRef = useRef<Map<string, Position>>(new Map());
     const liveHistoryRef = useRef<Map<string, Position[]>>(new Map());
+    const historyModeRef = useRef(false);
     const mapHandleRef = useRef<MapHandle>(null);
     const leafletMapRef = useRef<L.Map | null>(null);
     const initialCentered = useRef(false);
 
     // Load display settings from localStorage (and refresh on window focus)
+    const hiddenSourcesRef = useRef<Set<string>>(new Set());
     useEffect(() => {
         function applySettings() {
             const s = loadSettings();
-            setCapAlertsVisible(s.capAlerts);
-            setHiddenSources(new Set(s.hiddenSources));
+            setCapAlertsVisible(prev => prev === s.capAlerts ? prev : s.capAlerts);
+            // Only update if the actual hidden sources changed
+            const next = new Set(s.hiddenSources);
+            const prev = hiddenSourcesRef.current;
+            if (next.size !== prev.size || [...next].some(x => !prev.has(x))) {
+                hiddenSourcesRef.current = next;
+                setHiddenSources(next);
+            }
         }
         applySettings();
         window.addEventListener('focus', applySettings);
@@ -83,7 +91,7 @@ export default function Home() {
         liveHistoryRef.current = new Map(liveHistoryRef.current).set(pos.radioId, liveTrail);
 
         // Only update display state if in live mode
-        if (!historyMode) {
+        if (!historyModeRef.current) {
             setPositions(prev => new Map(prev).set(pos.radioId, pos));
             setHistory(prev => {
                 const map = new Map(prev);
@@ -92,15 +100,17 @@ export default function Home() {
                 return map.set(pos.radioId, trail);
             });
         }
-    }, [historyMode]);
+    }, []);
 
     const handleHistoryData = useCallback((data: Position[], isLive: boolean) => {
         if (isLive) {
+            historyModeRef.current = false;
             setHistoryMode(false);
             setPositions(new Map(livePositionsRef.current));
             setHistory(new Map(liveHistoryRef.current));
             return;
         }
+        historyModeRef.current = true;
         setHistoryMode(true);
         // Group positions by radioId, use latest as current position
         const posMap = new Map<string, Position>();
@@ -152,7 +162,7 @@ export default function Home() {
                 liveHistoryRef.current = new Map(liveHistoryRef.current).set(radioId, trail);
             }
             // Only update display if not in history playback mode
-            if (!historyMode) {
+            if (!historyModeRef.current) {
                 setHistory(prev => {
                     const map = new Map(prev);
                     for (const [radioId, trail] of Object.entries(data)) {
@@ -173,12 +183,14 @@ export default function Home() {
             setTimeout(() => setGeofenceAlerts(prev => prev.filter(a => a !== alert)), 10000);
         });
 
-        // If socket is already connected (e.g. navigated back from /profile,
-        // or React strict-mode remount), request fresh snapshots so we get
-        // both latest positions AND full history trails.
+        // If socket is already connected (e.g. navigated back from /profile),
+        // just mark as connected — data is already in refs from prior session.
+        // Only request snapshots if we have no data yet (fresh page load).
         if (socket.connected) {
             setConnected(true);
-            socket.emit('snapshots:request');
+            if (livePositionsRef.current.size === 0) {
+                socket.emit('snapshots:request');
+            }
         }
 
         return () => {
@@ -189,7 +201,8 @@ export default function Home() {
             socket.off('position:update');
             socket.off('geofence:alert');
         };
-    }, [session, applyPosition]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [session]);
 
     async function handleSignOut() {
         disconnectSocket();
@@ -205,13 +218,18 @@ export default function Home() {
         router.push('/settings');
     }
 
-    // Filter positions and sources by user visibility settings
-    const visibleSources = activeSources.filter(s => !hiddenSources.has(s));
-    const filteredPositions = new Map(
-        [...positions].filter(([, pos]) => !hiddenSources.has(pos.source))
+    // Filter positions and sources by user visibility settings (memoized)
+    const visibleSources = useMemo(
+        () => activeSources.filter(s => !hiddenSources.has(s)),
+        [activeSources, hiddenSources],
     );
-    const filteredHistory = new Map(
-        [...history].map(([id, trail]) => [id, trail.filter(pos => !hiddenSources.has(pos.source))])
+    const filteredPositions = useMemo(
+        () => new Map([...positions].filter(([, pos]) => !hiddenSources.has(pos.source))),
+        [positions, hiddenSources],
+    );
+    const filteredHistory = useMemo(
+        () => new Map([...history].map(([id, trail]) => [id, trail.filter(pos => !hiddenSources.has(pos.source))])),
+        [history, hiddenSources],
     );
 
     const forwardToAprs = useCallback((radioId: string) => {
