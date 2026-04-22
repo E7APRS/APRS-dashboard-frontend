@@ -201,8 +201,7 @@ export default function Home() {
             socket.off('position:update');
             socket.off('geofence:alert');
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [session]);
+    }, [session, applyPosition]);
 
     async function handleSignOut() {
         disconnectSocket();
