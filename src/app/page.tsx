@@ -214,6 +214,14 @@ export default function Home() {
         [...history].map(([id, trail]) => [id, trail.filter(pos => !hiddenSources.has(pos.source))])
     );
 
+    const forwardToAprs = useCallback((radioId: string) => {
+        if (!session) return;
+        fetch(`${BACKEND_URL}/api/positions/${encodeURIComponent(radioId)}/forward`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${session.access_token}` },
+        }).catch(() => {});
+    }, [session]);
+
     if (loading || !session || profileLoading || !profile) {
         return <div
             className="flex items-center justify-center h-screen bg-gray-50 dark:bg-brand-onyx text-gray-600 dark:text-gray-300">Loading...</div>;
@@ -254,6 +262,7 @@ export default function Home() {
                         history={filteredHistory}
                         selectedId={selectedId}
                         activeSources={visibleSources}
+                        onForwardToAprs={forwardToAprs}
                     />
                     <Legend activeSources={visibleSources}/>
                     <GeofencePanel

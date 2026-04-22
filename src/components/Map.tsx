@@ -55,6 +55,7 @@ interface Props {
     history: Map<string, Position[]>;
     selectedId: string | null;
     activeSources?: string[];
+    onForwardToAprs?: (radioId: string) => void;
 }
 
 const TILE_LAYERS = {
@@ -107,6 +108,11 @@ function buildPopupHtml(pos: Position): string {
         <div class="text-sm font-mono space-y-0.5">
             <div class="font-bold text-base mb-1">${escapeHtml(pos.callsign)}</div>
             ${rows.map(([label, value]) => `<div><span class="text-gray-500">${label}:</span> ${escapeHtml(value)}</div>`).join('')}
+            <button
+                data-forward-radio-id="${escapeHtml(pos.radioId)}"
+                style="margin-top:6px;width:100%;padding:4px 8px;font-size:12px;font-weight:600;background:#ff6600;color:#fff;border:none;border-radius:6px;cursor:pointer;"
+                onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'"
+            >Send to APRS</button>
         </div>
     `;
 }
@@ -124,7 +130,7 @@ export interface MapHandle {
     getMap(): L.Map | null;
 }
 
-function MapInner({positions, history, selectedId, activeSources = []}: Props, ref: React.ForwardedRef<MapHandle>) {
+function MapInner({positions, history, selectedId, activeSources = [], onForwardToAprs}: Props, ref: React.ForwardedRef<MapHandle>) {
     const [tileLayer, setTileLayer] = useState<TileLayerKey>('street');
     const containerRef = useRef<HTMLDivElement | null>(null);
     const mapRef = useRef<L.Map | null>(null);
@@ -132,6 +138,9 @@ function MapInner({positions, history, selectedId, activeSources = []}: Props, r
     const markersLayerRef = useRef<L.LayerGroup | null>(null);
     const trailsLayerRef = useRef<L.LayerGroup | null>(null);
     const selectedRef = useRef<string | null>(null);
+
+    const onForwardRef = useRef(onForwardToAprs);
+    onForwardRef.current = onForwardToAprs;
 
     useImperativeHandle(ref, () => ({
         getMap: () => mapRef.current,
@@ -159,6 +168,27 @@ function MapInner({positions, history, selectedId, activeSources = []}: Props, r
         baseLayerRef.current = baseLayer;
         trailsLayerRef.current = trailsLayer;
         markersLayerRef.current = markersLayer;
+
+        // Event delegation for "Send to APRS" buttons inside popups
+        container.addEventListener('click', (e) => {
+            const btn = (e.target as HTMLElement).closest('[data-forward-radio-id]') as HTMLElement | null;
+            if (!btn) return;
+            const radioId = btn.dataset.forwardRadioId;
+            if (radioId && onForwardRef.current) {
+                btn.textContent = 'Sending...';
+                btn.setAttribute('disabled', 'true');
+                (btn as HTMLButtonElement).style.opacity = '0.6';
+                onForwardRef.current(radioId);
+                setTimeout(() => {
+                    btn.textContent = 'Sent!';
+                    setTimeout(() => {
+                        btn.textContent = 'Send to APRS';
+                        btn.removeAttribute('disabled');
+                        (btn as HTMLButtonElement).style.opacity = '1';
+                    }, 2000);
+                }, 500);
+            }
+        });
 
         return () => {
             baseLayerRef.current = null;
