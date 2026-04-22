@@ -22,6 +22,16 @@ export interface Device {
     lastSeenAgeMs?: number;
 }
 
+export type SourceStatus = 'up' | 'degraded' | 'down' | 'disabled';
+
+export interface SourceHealth {
+    source: string;
+    status: SourceStatus;
+    lastPositionAt: string | null;
+    lastError: string | null;
+    positionsTotal: number;
+}
+
 export interface UserProfile {
     id: string;
     authId: string;

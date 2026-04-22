@@ -1,11 +1,12 @@
 'use client';
 
 import Image from 'next/image';
-import {useEffect, useState} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import {useRouter} from 'next/navigation';
 import {useAuth} from '@/components/AuthProvider';
 import {useTheme} from '@/components/ThemeProvider';
 import {SOURCE_COLOR} from '@/lib/colors';
+import {getSocket} from '@/lib/socket';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3001';
 
@@ -43,12 +44,19 @@ export function saveSettings(settings: AppSettings) {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
 }
 
+interface SourceState {
+    available: string[];
+    running: string[];
+    health: { source: string; status: string; lastPositionAt: string | null; positionsTotal: number }[];
+}
+
 export default function SettingsPage() {
     const {session, profile, loading, profileLoading} = useAuth();
     const {theme, toggleTheme} = useTheme();
     const router = useRouter();
 
-    const [activeSources, setActiveSources] = useState<string[]>([]);
+    const [sourceState, setSourceState] = useState<SourceState>({ available: [], running: [], health: [] });
+    const [toggling, setToggling] = useState<Set<string>>(new Set());
     const [settings, setSettings] = useState<AppSettings>(DEFAULTS);
     const [loaded, setLoaded] = useState(false);
 
@@ -58,16 +66,53 @@ export default function SettingsPage() {
         setLoaded(true);
     }, []);
 
-    // Fetch active sources from backend
-    useEffect(() => {
+    // Fetch source state from backend
+    const fetchSources = useCallback(() => {
         if (!session) return;
-        fetch(`${BACKEND_URL}/api/status`, {
+        fetch(`${BACKEND_URL}/api/sources`, {
             headers: {Authorization: `Bearer ${session.access_token}`},
         })
             .then(r => r.json())
-            .then(data => setActiveSources(data.activeSources ?? []))
+            .then(data => setSourceState({
+                available: data.available ?? [],
+                running: data.running ?? [],
+                health: data.health ?? [],
+            }))
             .catch(() => {});
     }, [session]);
+
+    useEffect(() => { fetchSources(); }, [fetchSources]);
+
+    // Listen for real-time health updates via Socket.io
+    useEffect(() => {
+        if (!session) return;
+        const sock = getSocket(session.access_token);
+        const onHealth = (health: SourceState['health']) => {
+            setSourceState(prev => ({ ...prev, health }));
+        };
+        sock.on('sources:health', onHealth);
+        return () => { sock.off('sources:health', onHealth); };
+    }, [session]);
+
+    async function toggleBackendSource(source: string) {
+        if (!session || toggling.has(source)) return;
+        const isRunning = sourceState.running.includes(source);
+        const action = isRunning ? 'stop' : 'start';
+
+        setToggling(prev => new Set(prev).add(source));
+        try {
+            const res = await fetch(`${BACKEND_URL}/api/sources/${source}/${action}`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${session.access_token}` },
+            });
+            if (res.ok) fetchSources();
+        } catch { /* ignore */ }
+        setToggling(prev => {
+            const next = new Set(prev);
+            next.delete(source);
+            return next;
+        });
+    }
 
     function toggleCapAlerts() {
         setSettings(prev => {
@@ -228,16 +273,77 @@ export default function SettingsPage() {
                                 </div>
                             </section>
 
-                            {/* Data Sources */}
+                            {/* Data Sources — Backend Control */}
                             <section>
                                 <h2 className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-3 font-roboto uppercase tracking-wide">
                                     Data Sources
                                 </h2>
                                 <p className="text-xs text-gray-500 dark:text-gray-400 font-roboto mb-4">
-                                    Choose which position sources are visible on the map.
+                                    Enable or disable data ingestion from each source on the server.
                                 </p>
                                 <div className="space-y-3">
-                                    {activeSources.map(source => {
+                                    {sourceState.available.map(source => {
+                                        const isRunning = sourceState.running.includes(source);
+                                        const health = sourceState.health.find(h => h.source === source);
+                                        const isBusy = toggling.has(source);
+                                        const status = health?.status ?? 'disabled';
+
+                                        return (
+                                            <div key={source} className="flex items-center gap-3 group">
+                                                <button
+                                                    onClick={() => toggleBackendSource(source)}
+                                                    disabled={isBusy}
+                                                    className={`relative w-9 h-5 rounded-full transition-colors flex-shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-dark-orange dark:focus-visible:ring-brand-orange ${
+                                                        isRunning
+                                                            ? 'bg-brand-orange'
+                                                            : 'bg-gray-300 dark:bg-gray-600'
+                                                    } ${isBusy ? 'opacity-50 cursor-wait' : 'cursor-pointer'}`}
+                                                    aria-label={`${isRunning ? 'Disable' : 'Enable'} ${SOURCE_LABEL[source] ?? source}`}
+                                                >
+                                                    <span
+                                                        className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
+                                                            isRunning ? 'translate-x-4' : 'translate-x-0'
+                                                        }`}
+                                                    />
+                                                </button>
+                                                <span
+                                                    className="inline-block w-3 h-3 rounded-full flex-shrink-0 ring-1 ring-brand-onyx/70 dark:ring-white/70"
+                                                    style={{backgroundColor: SOURCE_COLOR[source] ?? '#6b7280'}}
+                                                />
+                                                <div className="flex-1 min-w-0">
+                                                    <span className="text-sm text-gray-800 dark:text-gray-200 font-roboto group-hover:text-brand-dark-orange dark:group-hover:text-brand-orange transition-colors">
+                                                        {SOURCE_LABEL[source] ?? source}
+                                                    </span>
+                                                </div>
+                                                <span className={`text-[10px] font-medium font-roboto uppercase tracking-wide px-1.5 py-0.5 rounded ${
+                                                    status === 'up'       ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                                                    status === 'degraded' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                                                    status === 'down'     ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                                                                            'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-500'
+                                                }`}>
+                                                    {status}
+                                                </span>
+                                            </div>
+                                        );
+                                    })}
+                                    {sourceState.available.length === 0 && (
+                                        <p className="text-xs text-gray-400 dark:text-gray-500 font-roboto italic">
+                                            No toggleable data sources available.
+                                        </p>
+                                    )}
+                                </div>
+                            </section>
+
+                            {/* Map Visibility */}
+                            <section>
+                                <h2 className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-3 font-roboto uppercase tracking-wide">
+                                    Map Visibility
+                                </h2>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 font-roboto mb-4">
+                                    Hide or show markers for each source on the map (does not affect data collection).
+                                </p>
+                                <div className="space-y-3">
+                                    {sourceState.running.map(source => {
                                         const visible = !settings.hiddenSources.includes(source);
                                         return (
                                             <label key={source} className="flex items-center gap-3 cursor-pointer group">
@@ -257,9 +363,9 @@ export default function SettingsPage() {
                                             </label>
                                         );
                                     })}
-                                    {activeSources.length === 0 && (
+                                    {sourceState.running.length === 0 && (
                                         <p className="text-xs text-gray-400 dark:text-gray-500 font-roboto italic">
-                                            No data sources active on the server.
+                                            No sources running.
                                         </p>
                                     )}
                                 </div>
