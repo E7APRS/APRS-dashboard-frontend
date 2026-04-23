@@ -234,7 +234,7 @@ export default function Home() {
             <div className="flex flex-1 overflow-hidden">
                 {/* Sidebar */}
                 <aside
-                    className="w-64 bg-white dark:bg-[#111] border-r border-gray-500/85 dark:border-gray-500/85 overflow-y-auto flex-shrink-0 shadow-sm dark:shadow-none">
+                    className="w-64 bg-white dark:bg-brand-onyx border-r border-gray-500/85 dark:border-gray-500/85 overflow-y-auto flex-shrink-0 shadow-sm dark:shadow-none">
                     <div
                         className="px-4 py-3 text-xs font-rajdhani font-semibold text-brand-dark-orange dark:text-brand-orange uppercase tracking-widest border-b border-gray-500/85 dark:border-gray-500/85">
                         Devices

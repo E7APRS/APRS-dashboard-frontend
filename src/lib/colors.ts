@@ -13,4 +13,14 @@ export const TRACE_COLOR: Record<string, string> = {
     relay: '#ffa54d',       // orange
     meshtastic: '#67e8f9',  // light cyan
     mqtt: '#fde047',        // light yellow
-}
+};
+
+export const SEVERITY_COLOR: Record<string, string> = {
+    Extreme: '#dc2626',
+    Severe: '#ef4444',
+    Moderate: '#f97316',
+    Minor: '#eab308',
+    Unknown: '#6b7280',
+};
+
+export const GEOFENCE_DRAW_COLOR = '#ef4444';

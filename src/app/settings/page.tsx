@@ -124,13 +124,13 @@ export default function SettingsPage() {
                 className="absolute inset-0 opacity-[0.04] pointer-events-none"
                 style={{
                     backgroundImage:
-                        'linear-gradient(#FF6600 1px, transparent 1px), linear-gradient(90deg, #FF6600 1px, transparent 1px)',
+                        'linear-gradient(var(--brand-grid-color) 1px, transparent 1px), linear-gradient(90deg, var(--brand-grid-color) 1px, transparent 1px)',
                     backgroundSize: '40px 40px',
                 }}
             />
 
             {/* Top bar */}
-            <div className="relative bg-white dark:bg-[#111] border-b border-gray-500/85 dark:border-gray-500/85 shadow-sm dark:shadow-none">
+            <div className="relative bg-white dark:bg-brand-onyx border-b border-gray-500/85 dark:border-gray-500/85 shadow-sm dark:shadow-none">
                 <div className="max-w-2xl mx-auto flex items-center gap-3 px-6 py-4">
                     <button
                         onClick={() => router.push('/')}
@@ -145,7 +145,7 @@ export default function SettingsPage() {
             </div>
 
             <div className="relative max-w-2xl mx-auto px-6 py-8">
-                <div className="bg-white dark:bg-[#111] border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm dark:shadow-none overflow-hidden">
+                <div className="bg-white dark:bg-brand-onyx border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm dark:shadow-none overflow-hidden">
                     <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700">
                         <h1 className="text-lg font-semibold text-gray-800 dark:text-gray-200 font-rajdhani tracking-wide">
                             Settings
@@ -164,7 +164,7 @@ export default function SettingsPage() {
                                         type="checkbox"
                                         checked={theme === 'dark'}
                                         onChange={toggleTheme}
-                                        className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-[#1a1a1a] cursor-pointer accent-[#FF6600]"
+                                        className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-brand-onyx cursor-pointer accent-brand-orange"
                                     />
                                     <div>
                                         <span className="text-sm text-gray-800 dark:text-gray-200 font-roboto group-hover:text-brand-dark-orange dark:group-hover:text-brand-orange transition-colors">
@@ -187,7 +187,7 @@ export default function SettingsPage() {
                                         type="checkbox"
                                         checked={settings.capAlerts}
                                         onChange={toggleCapAlerts}
-                                        className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-brand-dark-orange dark:text-brand-orange focus:ring-brand-dark-orange dark:focus:ring-brand-orange bg-white dark:bg-[#1a1a1a] cursor-pointer accent-[#FF6600]"
+                                        className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-brand-dark-orange dark:text-brand-orange focus:ring-brand-dark-orange dark:focus:ring-brand-orange bg-white dark:bg-brand-onyx cursor-pointer accent-brand-orange"
                                     />
                                     <div>
                                         <span className="text-sm text-gray-800 dark:text-gray-200 font-roboto group-hover:text-brand-dark-orange dark:group-hover:text-brand-orange transition-colors">
@@ -216,7 +216,7 @@ export default function SettingsPage() {
                                         id="staleTimeout"
                                         value={settings.staleTimeout}
                                         onChange={e => setStaleTimeout(Number(e.target.value))}
-                                        className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#1a1a1a] text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-dark-orange dark:focus:ring-brand-orange focus:border-transparent font-roboto cursor-pointer"
+                                        className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-brand-onyx text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-dark-orange dark:focus:ring-brand-orange focus:border-transparent font-roboto cursor-pointer"
                                     >
                                         <option value={5}>5 minutes</option>
                                         <option value={10}>10 minutes</option>
@@ -245,7 +245,7 @@ export default function SettingsPage() {
                                                     type="checkbox"
                                                     checked={visible}
                                                     onChange={() => toggleSource(source)}
-                                                    className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-[#1a1a1a] cursor-pointer accent-[#FF6600]"
+                                                    className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-brand-onyx cursor-pointer accent-brand-orange"
                                                 />
                                                 <span
                                                     className="inline-block w-3 h-3 rounded-full flex-shrink-0 ring-1 ring-brand-onyx/70 dark:ring-white/70"

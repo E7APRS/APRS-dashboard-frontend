@@ -104,12 +104,12 @@ export default function RegisterPage() {
                 className="absolute inset-0 opacity-[0.04] pointer-events-none"
                 style={{
                     backgroundImage:
-                        'linear-gradient(#FF6600 1px, transparent 1px), linear-gradient(90deg, #FF6600 1px, transparent 1px)',
+                        'linear-gradient(var(--brand-grid-color) 1px, transparent 1px), linear-gradient(90deg, var(--brand-grid-color) 1px, transparent 1px)',
                     backgroundSize: '40px 40px',
                 }}
             />
 
-            <div className="relative bg-white dark:bg-[#111] border border-gray-500/85 dark:border-gray-500/85 rounded-2xl p-8 flex flex-col items-center gap-5 w-96 shadow-xl dark:shadow-none">
+            <div className="relative bg-white dark:bg-brand-onyx border border-gray-500/85 dark:border-gray-500/85 rounded-2xl p-8 flex flex-col items-center gap-5 w-96 shadow-xl dark:shadow-none">
                 {/* Logo */}
                 <div className="flex flex-col items-center gap-2">
                     <Image
@@ -176,7 +176,7 @@ export default function RegisterPage() {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full mt-1 bg-brand-dark-orange dark:bg-brand-orange text-white font-semibold py-2.5 px-4 rounded-lg hover:opacity-90 transition-opacity font-roboto disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-dark-orange dark:focus-visible:ring-brand-orange focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#111]"
+                        className="w-full mt-1 bg-brand-dark-orange dark:bg-brand-orange text-white font-semibold py-2.5 px-4 rounded-lg hover:opacity-90 transition-opacity font-roboto disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-dark-orange dark:focus-visible:ring-brand-orange focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-brand-onyx"
                     >
                         {loading ? 'Creating account...' : 'Create Account'}
                     </button>
@@ -224,7 +224,7 @@ function InputField({
                 value={value}
                 onChange={onChange}
                 required
-                className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#1a1a1a] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-dark-orange dark:focus:ring-brand-orange focus:border-transparent font-roboto"
+                className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-brand-onyx text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-dark-orange dark:focus:ring-brand-orange focus:border-transparent font-roboto"
             />
         </div>
     );

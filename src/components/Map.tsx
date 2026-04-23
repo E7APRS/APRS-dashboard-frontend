@@ -249,7 +249,7 @@ function MapInner({positions, history, selectedId, activeSources = []}: Props, r
                         className={`px-3 py-1 text-xs font-medium border-r border-gray-500/85 dark:border-gray-500/85 last:border-r-0 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-dark-orange dark:focus-visible:ring-brand-orange ${
                             tileLayer === key
                                 ? 'bg-brand-orange text-brand-onyx'
-                                : 'bg-white dark:bg-[#111] text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10'
+                                : 'bg-white dark:bg-brand-onyx text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10'
                         }`}
                     >
                         {layer.label}

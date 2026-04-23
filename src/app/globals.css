@@ -2,3 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+    --brand-grid-color: #FF6600;
+}
+

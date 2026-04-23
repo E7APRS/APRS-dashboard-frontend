@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { GEOFENCE_DRAW_COLOR } from '@/lib/colors';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3001';
 
@@ -138,7 +139,7 @@ export default function GeofencePanel({ accessToken, mapRef, socketAlerts }: Pro
             if (verts.length >= 2) {
                 drawPreviewRef.current = L.polygon(
                     [...verts, e.latlng],
-                    { color: '#ef4444', fillColor: '#ef4444', fillOpacity: 0.1, weight: 2, dashArray: '6 4' },
+                    { color: GEOFENCE_DRAW_COLOR, fillColor: GEOFENCE_DRAW_COLOR, fillOpacity: 0.1, weight: 2, dashArray: '6 4' },
                 ).addTo(map);
             }
             if (drawPolylineRef.current) {
@@ -151,13 +152,13 @@ export default function GeofencePanel({ accessToken, mapRef, socketAlerts }: Pro
             verts.push(e.latlng);
 
             const marker = L.circleMarker(e.latlng, {
-                radius: 5, color: '#ef4444', fillColor: '#fff', fillOpacity: 1, weight: 2,
+                radius: 5, color: GEOFENCE_DRAW_COLOR, fillColor: '#fff', fillOpacity: 1, weight: 2,
             }).addTo(map);
             drawMarkersRef.current.push(marker);
 
             if (!drawPolylineRef.current) {
                 drawPolylineRef.current = L.polyline(verts, {
-                    color: '#ef4444', weight: 2, dashArray: '6 4',
+                    color: GEOFENCE_DRAW_COLOR, weight: 2, dashArray: '6 4',
                 }).addTo(map);
             } else {
                 drawPolylineRef.current.setLatLngs(verts);
@@ -196,7 +197,7 @@ export default function GeofencePanel({ accessToken, mapRef, socketAlerts }: Pro
 
         // Create final polygon
         const finalPoly = L.polygon(verts, {
-            color: '#ef4444', fillColor: '#ef4444', fillOpacity: 0.15, weight: 2,
+            color: GEOFENCE_DRAW_COLOR, fillColor: GEOFENCE_DRAW_COLOR, fillOpacity: 0.15, weight: 2,
         }).addTo(map);
         drawLayerRef.current = finalPoly;
         drawVerticesRef.current = [];
@@ -295,7 +296,7 @@ export default function GeofencePanel({ accessToken, mapRef, socketAlerts }: Pro
                 className={`absolute top-14 right-2 z-[1000] px-3 py-1 text-xs rounded shadow border transition-colors ${
                     visible
                         ? 'bg-brand-orange text-brand-onyx border-brand-orange'
-                        : 'bg-white dark:bg-[#111] text-gray-700 dark:text-gray-300 border-gray-500/85 dark:border-gray-500/85 hover:bg-gray-100 dark:hover:bg-white/10'
+                        : 'bg-white dark:bg-brand-onyx text-gray-700 dark:text-gray-300 border-gray-500/85 dark:border-gray-500/85 hover:bg-gray-100 dark:hover:bg-white/10'
                 }`}
             >
                 Geofences
@@ -332,14 +333,14 @@ export default function GeofencePanel({ accessToken, mapRef, socketAlerts }: Pro
                                         value={editName}
                                         onChange={e => setEditName(e.target.value)}
                                         placeholder="Zone name..."
-                                        className="w-full text-xs px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#222] text-gray-700 dark:text-gray-200"
+                                        className="w-full text-xs px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-brand-onyx text-gray-700 dark:text-gray-200"
                                     />
                                     <input
                                         type="text"
                                         value={editCallsigns}
                                         onChange={e => setEditCallsigns(e.target.value)}
                                         placeholder="Watch callsigns (comma-separated, or empty for all)"
-                                        className="w-full text-xs px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#222] text-gray-700 dark:text-gray-200"
+                                        className="w-full text-xs px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-brand-onyx text-gray-700 dark:text-gray-200"
                                     />
                                     <div className="flex items-center gap-2">
                                         <label className="text-[10px] text-gray-400">Color</label>
@@ -439,14 +440,14 @@ export default function GeofencePanel({ accessToken, mapRef, socketAlerts }: Pro
                                 placeholder="Zone name..."
                                 value={newName}
                                 onChange={e => setNewName(e.target.value)}
-                                className="w-full text-xs px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#222] text-gray-700 dark:text-gray-200"
+                                className="w-full text-xs px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-brand-onyx text-gray-700 dark:text-gray-200"
                             />
                             <input
                                 type="text"
                                 placeholder="Watch callsigns (e.g. E71DM,E72AB) or leave empty for all"
                                 value={newWatchedCallsigns}
                                 onChange={e => setNewWatchedCallsigns(e.target.value)}
-                                className="w-full text-xs px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#222] text-gray-700 dark:text-gray-200"
+                                className="w-full text-xs px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-brand-onyx text-gray-700 dark:text-gray-200"
                             />
                             <div className="flex gap-1">
                                 <button

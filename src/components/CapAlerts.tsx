@@ -20,13 +20,8 @@ interface CapAlert {
     areas: CapArea[];
 }
 
-const SEVERITY_COLORS: Record<string, string> = {
-    Extreme: '#dc2626',
-    Severe: '#ef4444',
-    Moderate: '#f97316',
-    Minor: '#eab308',
-    Unknown: '#6b7280',
-};
+import { SEVERITY_COLOR } from '@/lib/colors';
+
 
 interface Props {
     accessToken: string;
@@ -66,7 +61,7 @@ export default function CapAlerts({ accessToken, mapRef, visible }: Props) {
             const alerts: CapAlert[] = await res.json();
 
             for (const alert of alerts) {
-                const color = SEVERITY_COLORS[alert.severity] ?? SEVERITY_COLORS.Unknown;
+                const color = SEVERITY_COLOR[alert.severity] ?? SEVERITY_COLOR.Unknown;
 
                 for (const area of alert.areas) {
                     if (area.polygon && area.polygon.length > 2) {
