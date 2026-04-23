@@ -5,6 +5,7 @@ export const SOURCE_COLOR: Record<string, string> = {
     relay: '#f97316',       // orange
     meshtastic: '#06b6d4',  // cyan
     mqtt: '#eab308',        // yellow
+    fixed: '#ec4899',       // pink
 };
 export const TRACE_COLOR: Record<string, string> = {
     aprsfi: '#66a2ff',      // blue
@@ -13,6 +14,7 @@ export const TRACE_COLOR: Record<string, string> = {
     relay: '#ffa54d',       // orange
     meshtastic: '#67e8f9',  // light cyan
     mqtt: '#fde047',        // light yellow
+    fixed: '#f9a8d4',       // light pink
 };
 
 export const SEVERITY_COLOR: Record<string, string> = {
