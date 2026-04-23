@@ -68,39 +68,38 @@ export default function GeofencePanel({ accessToken, mapRef, socketAlerts }: Pro
     // Render geofences on map
     useEffect(() => {
         const map = mapRef.current;
-        if (!map || !map.getContainer()) return;
+        if (!map) return;
 
         import('leaflet').then((L) => {
-            // Verify the map is still valid (not destroyed by React remount)
-            try { map.getSize(); } catch { return; }
+            // All Leaflet DOM operations wrapped — map container may be destroyed
+            // between the async import and execution (React remount, tab switch).
+            try {
+                map.getSize(); // throws if map is destroyed
 
-            // Recreate layer group if the map instance changed (e.g. after reload)
-            if (layerGroupRef.current) {
-                try {
-                    layerGroupRef.current.clearLayers();
-                } catch {
-                    layerGroupRef.current = null;
+                if (layerGroupRef.current) {
+                    try { layerGroupRef.current.clearLayers(); } catch { layerGroupRef.current = null; }
                 }
-            }
-            if (!layerGroupRef.current) {
-                try {
+                if (!layerGroupRef.current) {
                     layerGroupRef.current = L.layerGroup().addTo(map);
-                } catch { return; }
-            }
+                }
 
-            if (!visible || !layerGroupRef.current) return;
+                if (!visible) return;
 
-            for (const fence of fences) {
-                if (!fence.active) continue;
-                const coords = fence.geometry.coordinates[0].map(c => [c[1], c[0]] as [number, number]);
-                L.polygon(coords, {
-                    color: fence.color,
-                    fillColor: fence.color,
-                    fillOpacity: 0.15,
-                    weight: 2,
-                    dashArray: '6 4',
-                }).bindPopup(`<b>${fence.name}</b><br/>${fence.description}`)
-                  .addTo(layerGroupRef.current);
+                for (const fence of fences) {
+                    if (!fence.active) continue;
+                    const coords = fence.geometry.coordinates[0].map(c => [c[1], c[0]] as [number, number]);
+                    L.polygon(coords, {
+                        color: fence.color,
+                        fillColor: fence.color,
+                        fillOpacity: 0.15,
+                        weight: 2,
+                        dashArray: '6 4',
+                    }).bindPopup(`<b>${fence.name}</b><br/>${fence.description}`)
+                      .addTo(layerGroupRef.current!);
+                }
+            } catch {
+                // Map container destroyed — skip silently
+                layerGroupRef.current = null;
             }
         });
     }, [visible, fences, mapRef]);
