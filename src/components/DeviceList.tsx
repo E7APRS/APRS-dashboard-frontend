@@ -27,6 +27,13 @@ export default function DeviceList({positions, selectedId, onSelect}: Props) {
     const [sortDir, setSortDir] = useState<SortDir>('asc');
     const [query, setQuery] = useState('');
     const [staleMs, setStaleMs] = useState(loadSettings().staleTimeout * 60_000);
+    const [, setTick] = useState(0);
+
+    // Force re-render every 15s so timeSince labels stay current
+    useEffect(() => {
+        const timer = setInterval(() => setTick(t => t + 1), 15_000);
+        return () => clearInterval(timer);
+    }, []);
 
     useEffect(() => {
         function refresh() { setStaleMs(loadSettings().staleTimeout * 60_000); }

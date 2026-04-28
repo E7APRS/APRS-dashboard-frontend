@@ -4,8 +4,7 @@ import React, {createContext, useContext, useEffect, useState, useCallback} from
 import type {Session} from '@supabase/supabase-js';
 import {createClient} from '@/lib/supabase';
 import {UserProfile} from '@/lib/types';
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3001';
+import {BACKEND_URL} from '@/lib/config';
 
 interface AuthContextValue {
     session: Session | null;

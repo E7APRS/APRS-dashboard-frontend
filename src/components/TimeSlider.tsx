@@ -2,8 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Position } from '@/lib/types';
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3001';
+import { BACKEND_URL } from '@/lib/config';
 
 interface Props {
     accessToken: string;

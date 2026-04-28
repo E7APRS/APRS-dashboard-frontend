@@ -138,6 +138,7 @@ function MapInner({positions, history, selectedId, activeSources = [], onForward
     const markersLayerRef = useRef<L.LayerGroup | null>(null);
     const trailsLayerRef = useRef<L.LayerGroup | null>(null);
     const selectedRef = useRef<string | null>(null);
+    const markerMapRef = useRef(new globalThis.Map<string, L.Marker>());
 
     const onForwardRef = useRef(onForwardToAprs);
     onForwardRef.current = onForwardToAprs;
@@ -195,6 +196,7 @@ function MapInner({positions, history, selectedId, activeSources = [], onForward
             trailsLayerRef.current = null;
             markersLayerRef.current = null;
             selectedRef.current = null;
+            markerMapRef.current.clear();
             map.remove();
             mapRef.current = null;
         };
@@ -213,11 +215,19 @@ function MapInner({positions, history, selectedId, activeSources = [], onForward
     useEffect(() => {
         if (!markersLayerRef.current || !trailsLayerRef.current) return;
 
-        markersLayerRef.current.clearLayers();
+        const markersLayer = markersLayerRef.current;
+        const markerMap = markerMapRef.current;
+
+        // Trails are cheap to rebuild (only drawn for selected device)
         trailsLayerRef.current.clearLayers();
 
+        // Track which radioIds are still present to remove stale markers
+        const activeIds = new Set<string>();
+
         for (const pos of positions.values()) {
-            // Trail only for the selected device, and only if location actually changed
+            activeIds.add(pos.radioId);
+
+            // Trail for selected device
             if (selectedId && pos.radioId === selectedId) {
                 const trail = history.get(pos.radioId) ?? [];
                 const unique = trail.filter((p, i, arr) =>
@@ -234,11 +244,28 @@ function MapInner({positions, history, selectedId, activeSources = [], onForward
                 }
             }
 
-            const marker = L.marker([pos.lat, pos.lon], {
-                icon: createIcon(pos.source, pos.symbol, pos.symbolTable),
-            }).addTo(markersLayerRef.current);
+            const existing = markerMap.get(pos.radioId);
+            if (existing) {
+                // Update position and popup in-place — no DOM teardown/rebuild
+                existing.setLatLng([pos.lat, pos.lon]);
+                existing.setIcon(createIcon(pos.source, pos.symbol, pos.symbolTable));
+                existing.setPopupContent(buildPopupHtml(pos));
+            } else {
+                // New device — create marker
+                const marker = L.marker([pos.lat, pos.lon], {
+                    icon: createIcon(pos.source, pos.symbol, pos.symbolTable),
+                }).addTo(markersLayer);
+                marker.bindPopup(buildPopupHtml(pos));
+                markerMap.set(pos.radioId, marker);
+            }
+        }
 
-            marker.bindPopup(buildPopupHtml(pos));
+        // Remove markers for devices no longer in the positions map
+        for (const [radioId, marker] of markerMap) {
+            if (!activeIds.has(radioId)) {
+                markersLayer.removeLayer(marker);
+                markerMap.delete(radioId);
+            }
         }
     }, [positions, history, selectedId]);
 

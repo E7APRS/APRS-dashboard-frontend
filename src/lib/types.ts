@@ -10,7 +10,7 @@ export interface Position {
     symbol?: string;       // APRS symbol code e.g. '-', '#', '['
     symbolTable?: string;  // '/' = primary table, '\' = alternate table
     timestamp: string;
-    source: 'aprsfi' | 'aprsis' | 'dmr' | 'fixed' | 'relay' | 'meshtastic' | 'mqtt';
+    source: 'aprsfi' | 'aprsis' | 'simulator' | 'fixed' | 'dmr' | 'relay' | 'meshtastic' | 'mqtt';
 }
 
 export interface Device {

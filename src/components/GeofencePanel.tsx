@@ -2,8 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { GEOFENCE_DRAW_COLOR } from '@/lib/colors';
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3001';
+import { BACKEND_URL } from '@/lib/config';
 
 interface Geofence {
     id: string;

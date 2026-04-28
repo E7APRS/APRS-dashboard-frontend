@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef } from 'react';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3001';
+import { BACKEND_URL } from '@/lib/config';
 
 interface CapArea {
     areaDesc: string;
@@ -22,6 +22,9 @@ interface CapAlert {
 
 import { SEVERITY_COLOR } from '@/lib/colors';
 
+function esc(s: string): string {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
 
 interface Props {
     accessToken: string;
@@ -72,11 +75,11 @@ export default function CapAlerts({ accessToken, mapRef, visible }: Props) {
                             fillOpacity: 0.12,
                             weight: 2,
                         }).bindPopup(
-                            `<div class="text-sm"><b>${alert.headline || 'Alert'}</b><br/>` +
-                            `<span class="text-gray-500">Severity:</span> ${alert.severity}<br/>` +
-                            `<span class="text-gray-500">Urgency:</span> ${alert.urgency}<br/>` +
-                            `<span class="text-gray-500">Area:</span> ${area.areaDesc}<br/>` +
-                            `${alert.description ? `<p class="mt-1 text-xs">${alert.description.slice(0, 200)}</p>` : ''}` +
+                            `<div class="text-sm"><b>${esc(alert.headline || 'Alert')}</b><br/>` +
+                            `<span class="text-gray-500">Severity:</span> ${esc(alert.severity)}<br/>` +
+                            `<span class="text-gray-500">Urgency:</span> ${esc(alert.urgency)}<br/>` +
+                            `<span class="text-gray-500">Area:</span> ${esc(area.areaDesc)}<br/>` +
+                            `${alert.description ? `<p class="mt-1 text-xs">${esc(alert.description.slice(0, 200))}</p>` : ''}` +
                             `</div>`,
                         ).addTo(layerGroupRef.current!);
                     }

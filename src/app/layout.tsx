@@ -19,8 +19,20 @@ const roboto = Roboto({
 });
 
 export const metadata: Metadata = {
+    metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL ?? 'https://e7aprs.ba'),
     title: 'E7APRS Tracker',
     description: 'Real-time GPS tracking — DMR & APRS Network',
+    openGraph: {
+        title: 'E7APRS Tracker',
+        description: 'Real-time GPS tracking — DMR & APRS Network',
+        images: ['/e7aprs.png'],
+    },
+    twitter: {
+        card: 'summary',
+        title: 'E7APRS Tracker',
+        description: 'Real-time GPS tracking — DMR & APRS Network',
+        images: ['/e7aprs.png'],
+    },
 };
 
 export default function RootLayout({children}: { children: React.ReactNode }) {
@@ -35,17 +47,7 @@ export default function RootLayout({children}: { children: React.ReactNode }) {
             <meta name="color-scheme" content="dark light"/>
             <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FF6600"/>
             <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1A1A1A"/>
-            <meta property="og:type" content="website"/>
-            <meta property="og:title" content="E7APRS Tracker"/>
-            <meta property="og:description" content="Real-time GPS tracking — DMR & APRS Network"/>
-            <meta property="og:image" content="/e7aprs.png"/>
-            <meta property="og:image:alt" content="E7APRS logo"/>
-            <meta name="twitter:card" content="summary"/>
-            <meta name="twitter:title" content="E7APRS Tracker"/>
-            <meta name="twitter:description" content="Real-time GPS tracking — DMR & APRS Network"/>
-            <meta name="twitter:image" content="/e7aprs.png"/>
-            <meta name="twitter:image:alt" content="E7APRS logo"/>
-            <title>E7APRS Tracker</title>
+            {/* OG and Twitter meta tags are handled by the Next.js metadata export */}
         </head>
         <body
             className={`${rajdhani.variable} ${roboto.variable} font-roboto bg-gray-50 dark:bg-brand-onyx text-brand-onyx dark:text-white antialiased`}>

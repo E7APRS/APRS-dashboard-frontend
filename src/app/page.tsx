@@ -16,12 +16,12 @@ import {useAuth} from '@/components/AuthProvider';
 import {loadSettings} from '@/app/settings/page';
 import type {MapHandle} from '@/components/Map';
 import {createClient} from '@/lib/supabase';
+import {BACKEND_URL} from '@/lib/config';
 
 // Leaflet cannot be SSR-rendered (rename avoids shadowing global Map<K,V>)
 const TrackingMap = dynamic(() => import('@/components/Map'), {ssr: false});
 
 const HISTORY_LIMIT = 50;
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3001';
 
 export default function Home() {
     const {session, profile, loading, profileLoading} = useAuth();

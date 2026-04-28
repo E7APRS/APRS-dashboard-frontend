@@ -4,8 +4,7 @@ import Image from 'next/image';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/AuthProvider';
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3001';
+import { BACKEND_URL } from '@/lib/config';
 
 export default function CompleteProfilePage() {
     const { session, profile, loading, profileLoading, setProfile } = useAuth();

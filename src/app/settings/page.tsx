@@ -7,8 +7,7 @@ import {useAuth} from '@/components/AuthProvider';
 import {useTheme} from '@/components/ThemeProvider';
 import {SOURCE_COLOR} from '@/lib/colors';
 import {getSocket} from '@/lib/socket';
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3001';
+import {BACKEND_URL} from '@/lib/config';
 
 const SOURCE_LABEL: Record<string, string> = {
     simulator: 'Simulator',
