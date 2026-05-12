@@ -59,6 +59,7 @@ export default function UserMenu({ profile, onSignOut, onProfile, onSettings }: 
                         src={avatarSrc}
                         alt={`${profile.firstName} ${profile.lastName}`}
                         className="w-full h-full object-cover"
+                        crossOrigin="anonymous"
                         onError={() => setImgError(true)}
                     />
                 ) : (
