@@ -12,5 +12,10 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 export function createClient() {
+    if (!supabaseUrl || !supabaseAnonKey) {
+        throw new Error(
+            'Supabase is not configured. Please ensure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set as environment variables during build time.'
+        );
+    }
     return createBrowserClient(supabaseUrl, supabaseAnonKey);
 }

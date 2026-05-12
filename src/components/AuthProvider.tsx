@@ -31,7 +31,13 @@ export function AuthProvider({children}: { children: React.ReactNode }) {
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [loading, setLoading] = useState(true);
     const [profileLoading, setProfileLoading] = useState(true);
-    const supabase = createClient();
+    const [supabase, setSupabase] = useState(() => {
+        try {
+            return createClient();
+        } catch {
+            return null;
+        }
+    });
 
     const fetchProfile = useCallback(async (accessToken: string) => {
         setProfileLoading(true);
@@ -61,6 +67,12 @@ export function AuthProvider({children}: { children: React.ReactNode }) {
 
     useEffect(() => {
         // Handle PKCE auth code that landed on any page (email confirm, OAuth redirect, etc.)
+        if (!supabase) {
+            setLoading(false);
+            setProfileLoading(false);
+            return;
+        }
+
         const params = new URLSearchParams(window.location.search);
         const code = params.get('code');
         const init = async () => {
@@ -92,7 +104,7 @@ export function AuthProvider({children}: { children: React.ReactNode }) {
         });
 
         return () => subscription.unsubscribe();
-    }, []);
+    }, [supabase, fetchProfile]);
 
     return (
         <AuthContext.Provider value={{session, profile, loading, profileLoading, setProfile, refreshProfile}}>

@@ -9,9 +9,16 @@ import { useAuth } from '@/components/AuthProvider';
 import { BACKEND_URL } from '@/lib/config';
 
 export default function RegisterPage() {
-    const supabase = createClient();
     const router = useRouter();
     const { setProfile } = useAuth();
+
+    const [supabase, setSupabase] = useState(() => {
+        try {
+            return createClient();
+        } catch {
+            return null;
+        }
+    });
 
     const [form, setForm] = useState({
         firstName: '',
@@ -24,7 +31,9 @@ export default function RegisterPage() {
         qthLocator: '',
         callsign: '',
     });
-    const [error, setError] = useState('');
+    const [error, setError] = useState(() => {
+        return supabase ? '' : 'Authentication service is not configured. Please contact support.';
+    });
     const [loading, setLoading] = useState(false);
 
     function onChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -34,6 +43,11 @@ export default function RegisterPage() {
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
         setError('');
+
+        if (!supabase) {
+            setError('Authentication service is not configured. Please contact support.');
+            return;
+        }
 
         const { firstName, lastName, email, password, address, city, country, qthLocator, callsign } = form;
         if (!firstName || !lastName || !email || !password || !address || !city || !country || !qthLocator || !callsign) {
@@ -174,7 +188,7 @@ export default function RegisterPage() {
 
                     <button
                         type="submit"
-                        disabled={loading}
+                        disabled={loading || !supabase}
                         className="w-full mt-1 bg-brand-dark-orange dark:bg-brand-orange text-white font-semibold py-2.5 px-4 rounded-lg hover:opacity-90 transition-opacity font-roboto disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-dark-orange dark:focus-visible:ring-brand-orange focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-brand-onyx"
                     >
                         {loading ? 'Creating account...' : 'Create Account'}

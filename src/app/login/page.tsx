@@ -7,15 +7,28 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
 
 export default function LoginPage() {
-    const supabase = createClient();
     const router = useRouter();
+
+    const [supabase, setSupabase] = useState(() => {
+        try {
+            return createClient();
+        } catch {
+            return null;
+        }
+    });
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
+    const [error, setError] = useState(() => {
+        return supabase ? '' : 'Authentication service is not configured. Please contact support.';
+    });
     const [loading, setLoading] = useState(false);
 
     async function signInWithGoogle() {
+        if (!supabase) {
+            setError('Authentication service is not configured. Please contact support.');
+            return;
+        }
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || window.location.origin;
         await supabase.auth.signInWithOAuth({
             provider: 'google',
@@ -28,6 +41,11 @@ export default function LoginPage() {
     async function signInWithPassword(e: React.FormEvent) {
         e.preventDefault();
         setError('');
+
+        if (!supabase) {
+            setError('Authentication service is not configured. Please contact support.');
+            return;
+        }
 
         if (!email || !password) {
             setError('Email and password are required.');
@@ -142,7 +160,7 @@ export default function LoginPage() {
 
                     <button
                         type="submit"
-                        disabled={loading}
+                        disabled={loading || !supabase}
                         className="w-full bg-brand-dark-orange dark:bg-brand-orange text-white font-semibold py-2.5 px-4 rounded-lg hover:opacity-90 transition-opacity font-roboto disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-dark-orange dark:focus-visible:ring-brand-orange focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-brand-onyx"
                     >
                         {loading ? 'Signing in...' : 'Sign In'}
@@ -159,7 +177,8 @@ export default function LoginPage() {
                 {/* Google sign in */}
                 <button
                     onClick={signInWithGoogle}
-                    className="flex items-center gap-3 w-full justify-center bg-white dark:bg-white text-gray-900 font-medium py-2.5 px-4 rounded-lg hover:bg-gray-100 transition-colors font-roboto border border-gray-500 dark:border-gray-400 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-dark-orange dark:focus-visible:ring-brand-orange focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-brand-onyx"
+                    disabled={!supabase}
+                    className="flex items-center gap-3 w-full justify-center bg-white dark:bg-white text-gray-900 font-medium py-2.5 px-4 rounded-lg hover:bg-gray-100 transition-colors font-roboto border border-gray-500 dark:border-gray-400 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-dark-orange dark:focus-visible:ring-brand-orange focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-brand-onyx disabled:opacity-50"
                 >
                     <GoogleIcon />
                     Sign in with Google
