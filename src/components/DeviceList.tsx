@@ -35,11 +35,6 @@ export default function DeviceList({positions, selectedId, onSelect}: Props) {
         return () => clearInterval(timer);
     }, []);
 
-    useEffect(() => {
-        function refresh() { setStaleMs(loadSettings().staleTimeout * 60_000); }
-        window.addEventListener('focus', refresh);
-        return () => window.removeEventListener('focus', refresh);
-    }, []);
 
     function isStale(iso: string): boolean {
         return Date.now() - new Date(iso).getTime() > staleMs;

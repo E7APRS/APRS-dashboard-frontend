@@ -42,9 +42,9 @@ export default function Home() {
     const historyModeRef = useRef(false);
     const mapHandleRef = useRef<MapHandle>(null);
     const leafletMapRef = useRef<L.Map | null>(null);
-    const initialCentered = useRef(false);
+    const initialUserFocusApplied = useRef(false);
 
-    // Load display settings from localStorage (and refresh on window focus)
+    // Load display settings from localStorage.
     const hiddenSourcesRef = useRef<Set<string>>(new Set());
     useEffect(() => {
         function applySettings() {
@@ -59,8 +59,6 @@ export default function Home() {
             }
         }
         applySettings();
-        window.addEventListener('focus', applySettings);
-        return () => window.removeEventListener('focus', applySettings);
     }, []);
 
     // Keep leafletMapRef in sync with the dynamically loaded map component
@@ -147,13 +145,6 @@ export default function Home() {
 
         socket.on('positions:snapshot', (data: Position[]) => {
             data.forEach(applyPosition);
-            if (!initialCentered.current) {
-                const e70ab = data.find(p => p.radioId === 'E70AB' || p.radioId.startsWith('E70AB-'));
-                if (e70ab) {
-                    setSelectedId(e70ab.radioId);
-                    initialCentered.current = true;
-                }
-            }
         });
 
         socket.on('history:snapshot', (data: Record<string, Position[]>) => {
@@ -202,6 +193,28 @@ export default function Home() {
             socket.off('geofence:alert');
         };
     }, [session, applyPosition]);
+
+    useEffect(() => {
+        if (initialUserFocusApplied.current || selectedId || !profile?.callsign) return;
+
+        const targetCallsign = profile.callsign.trim().toUpperCase();
+        if (!targetCallsign) return;
+
+        const match = Array.from(positions.values()).find(pos => {
+            const posCallsign = pos.callsign.trim().toUpperCase();
+            const radioId = pos.radioId.trim().toUpperCase();
+            return (
+                posCallsign === targetCallsign ||
+                radioId === targetCallsign ||
+                radioId.startsWith(`${targetCallsign}-`)
+            );
+        });
+
+        if (match) {
+            setSelectedId(match.radioId);
+            initialUserFocusApplied.current = true;
+        }
+    }, [profile?.callsign, positions, selectedId]);
 
     async function handleSignOut() {
         disconnectSocket();
