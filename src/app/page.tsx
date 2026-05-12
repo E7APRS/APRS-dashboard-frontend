@@ -37,12 +37,14 @@ export default function Home() {
     const [geofenceAlerts, setGeofenceAlerts] = useState<Array<{type: 'enter' | 'exit'; radioId: string; callsign: string; fenceName: string; timestamp: string}>>([]);
     const [capAlertsVisible, setCapAlertsVisible] = useState(false);
     const [hiddenSources, setHiddenSources] = useState<Set<string>>(new Set());
+    const [mapReady, setMapReady] = useState(false);
     const livePositionsRef = useRef<Map<string, Position>>(new Map());
     const liveHistoryRef = useRef<Map<string, Position[]>>(new Map());
     const historyModeRef = useRef(false);
     const mapHandleRef = useRef<MapHandle>(null);
     const leafletMapRef = useRef<L.Map | null>(null);
     const initialUserFocusApplied = useRef(false);
+    const handleMapReady = useCallback(() => setMapReady(true), []);
 
     // Load display settings from localStorage.
     const hiddenSourcesRef = useRef<Set<string>>(new Set());
@@ -195,7 +197,7 @@ export default function Home() {
     }, [session, applyPosition]);
 
     useEffect(() => {
-        if (initialUserFocusApplied.current || selectedId || !profile?.callsign) return;
+        if (!mapReady || initialUserFocusApplied.current || selectedId || !profile?.callsign) return;
 
         const targetCallsign = profile.callsign.trim().toUpperCase();
         if (!targetCallsign) return;
@@ -214,7 +216,7 @@ export default function Home() {
             setSelectedId(match.radioId);
             initialUserFocusApplied.current = true;
         }
-    }, [profile?.callsign, positions, selectedId]);
+    }, [mapReady, profile?.callsign, positions, selectedId]);
 
     async function handleSignOut() {
         disconnectSocket();
@@ -252,9 +254,13 @@ export default function Home() {
         }).catch(() => {});
     }, [session]);
 
-    if (loading || !session || profileLoading || !profile) {
+    if ((!session && loading) || !session || (!profile && profileLoading)) {
         return <div
             className="flex items-center justify-center h-screen bg-gray-50 dark:bg-brand-onyx text-gray-600 dark:text-gray-300">Loading...</div>;
+    }
+
+    if (!profile) {
+        return null;
     }
 
     return (
@@ -293,6 +299,8 @@ export default function Home() {
                         selectedId={selectedId}
                         activeSources={visibleSources}
                         onForwardToAprs={forwardToAprs}
+                        onReady={handleMapReady}
+                        mapReady={mapReady}
                     />
                     <Legend activeSources={visibleSources}/>
                     <GeofencePanel

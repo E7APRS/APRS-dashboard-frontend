@@ -1,6 +1,6 @@
 'use client';
 
-import React, {createContext, useContext, useEffect, useState, useCallback} from 'react';
+import React, {createContext, useContext, useEffect, useState, useCallback, useRef} from 'react';
 import type {Session} from '@supabase/supabase-js';
 import {createClient} from '@/lib/supabase';
 import {UserProfile} from '@/lib/types';
@@ -31,6 +31,7 @@ export function AuthProvider({children}: { children: React.ReactNode }) {
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [loading, setLoading] = useState(true);
     const [profileLoading, setProfileLoading] = useState(true);
+    const fetchedProfileUserIdRef = useRef<string | null>(null);
     const [supabase, setSupabase] = useState(() => {
         try {
             return createClient();
@@ -48,12 +49,15 @@ export function AuthProvider({children}: { children: React.ReactNode }) {
             if (res.ok) {
                 const data = await res.json();
                 setProfile(data);
+                fetchedProfileUserIdRef.current = data.authId ?? null;
             } else {
                 // 404 = profile not yet created (e.g. Google OAuth first login)
                 setProfile(null);
+                fetchedProfileUserIdRef.current = null;
             }
         } catch {
             setProfile(null);
+            fetchedProfileUserIdRef.current = null;
         } finally {
             setProfileLoading(false);
         }
@@ -96,9 +100,13 @@ export function AuthProvider({children}: { children: React.ReactNode }) {
         const {data: {subscription}} = supabase.auth.onAuthStateChange((_event, session) => {
             setSession(session);
             if (session) {
-                fetchProfile(session.access_token);
+                const userId = session.user.id;
+                if (fetchedProfileUserIdRef.current !== userId) {
+                    fetchProfile(session.access_token);
+                }
             } else {
                 setProfile(null);
+                fetchedProfileUserIdRef.current = null;
                 setProfileLoading(false);
             }
         });

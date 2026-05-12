@@ -56,6 +56,8 @@ interface Props {
     selectedId: string | null;
     activeSources?: string[];
     onForwardToAprs?: (radioId: string) => void;
+    onReady?: () => void;
+    mapReady?: boolean;
 }
 
 const TILE_LAYERS = {
@@ -130,7 +132,7 @@ export interface MapHandle {
     getMap(): L.Map | null;
 }
 
-function MapInner({positions, history, selectedId, activeSources = [], onForwardToAprs}: Props, ref: React.ForwardedRef<MapHandle>) {
+function MapInner({positions, history, selectedId, activeSources = [], onForwardToAprs, onReady, mapReady = false}: Props, ref: React.ForwardedRef<MapHandle>) {
     const [tileLayer, setTileLayer] = useState<TileLayerKey>('street');
     const containerRef = useRef<HTMLDivElement | null>(null);
     const mapRef = useRef<L.Map | null>(null);
@@ -139,9 +141,11 @@ function MapInner({positions, history, selectedId, activeSources = [], onForward
     const trailsLayerRef = useRef<L.LayerGroup | null>(null);
     const selectedRef = useRef<string | null>(null);
     const markerMapRef = useRef(new globalThis.Map<string, L.Marker>());
+    const onReadyRef = useRef(onReady);
 
     const onForwardRef = useRef(onForwardToAprs);
     onForwardRef.current = onForwardToAprs;
+    onReadyRef.current = onReady;
 
     useImperativeHandle(ref, () => ({
         getMap: () => mapRef.current,
@@ -170,6 +174,10 @@ function MapInner({positions, history, selectedId, activeSources = [], onForward
         trailsLayerRef.current = trailsLayer;
         markersLayerRef.current = markersLayer;
 
+        const readyTimer = window.setTimeout(() => {
+            onReadyRef.current?.();
+        }, 0);
+
         // Event delegation for "Send to APRS" buttons inside popups
         container.addEventListener('click', (e) => {
             const btn = (e.target as HTMLElement).closest('[data-forward-radio-id]') as HTMLElement | null;
@@ -192,6 +200,7 @@ function MapInner({positions, history, selectedId, activeSources = [], onForward
         });
 
         return () => {
+            window.clearTimeout(readyTimer);
             baseLayerRef.current = null;
             trailsLayerRef.current = null;
             markersLayerRef.current = null;
@@ -277,7 +286,7 @@ function MapInner({positions, history, selectedId, activeSources = [], onForward
             mapRef.current.flyTo([selected.lat, selected.lon], 14, {duration: 1.2});
             selectedRef.current = selectedId;
         }
-    }, [selectedId, positions]);
+    }, [selectedId, positions, mapReady]);
 
     return (
         <div className="relative w-full h-full">

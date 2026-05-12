@@ -42,6 +42,8 @@ export default function GeofencePanel({ accessToken, mapRef, socketAlerts }: Pro
     const [editCallsigns, setEditCallsigns] = useState('');
     const [editColor, setEditColor] = useState('');
     const layerGroupRef = useRef<L.LayerGroup | null>(null);
+    const attachedMapRef = useRef<L.Map | null>(null);
+    const renderingRef = useRef(false);
     const drawLayerRef = useRef<L.Layer | null>(null);
 
     // Click-to-draw refs
@@ -64,26 +66,44 @@ export default function GeofencePanel({ accessToken, mapRef, socketAlerts }: Pro
 
     useEffect(() => { fetchFences(); }, [fetchFences]);
 
-    // Render geofences on map
-    useEffect(() => {
+    const renderGeofences = useCallback(async () => {
+        if (renderingRef.current) return;
+        renderingRef.current = true;
+
         const map = mapRef.current;
-        if (!map) return;
+        if (!map) {
+            try { layerGroupRef.current?.clearLayers(); } catch { /* ignore */ }
+            layerGroupRef.current = null;
+            attachedMapRef.current = null;
+            renderingRef.current = false;
+            return;
+        }
 
-        import('leaflet').then((L) => {
-            // All Leaflet DOM operations wrapped — map container may be destroyed
-            // between the async import and execution (React remount, tab switch).
-            try {
-                map.getSize(); // throws if map is destroyed
+        try {
+            const L = await import('leaflet');
 
-                if (layerGroupRef.current) {
-                    try { layerGroupRef.current.clearLayers(); } catch { layerGroupRef.current = null; }
-                }
-                if (!layerGroupRef.current) {
-                    layerGroupRef.current = L.layerGroup().addTo(map);
-                }
+            // Map container may be destroyed between async import and execution.
+            map.getSize();
 
-                if (!visible) return;
+            if (attachedMapRef.current && attachedMapRef.current !== map) {
+                try { layerGroupRef.current?.clearLayers(); } catch { /* ignore */ }
+                layerGroupRef.current = null;
+            }
 
+            if (attachedMapRef.current && attachedMapRef.current !== map) {
+                try { layerGroupRef.current?.clearLayers(); } catch { /* ignore */ }
+                layerGroupRef.current = null;
+            }
+
+            if (!layerGroupRef.current) {
+                layerGroupRef.current = L.layerGroup().addTo(map);
+            } else {
+                try { layerGroupRef.current.clearLayers(); } catch { /* ignore */ }
+            }
+
+            attachedMapRef.current = map;
+
+            if (visible) {
                 for (const fence of fences) {
                     if (!fence.active) continue;
                     const coords = fence.geometry.coordinates[0].map(c => [c[1], c[0]] as [number, number]);
@@ -94,14 +114,32 @@ export default function GeofencePanel({ accessToken, mapRef, socketAlerts }: Pro
                         weight: 2,
                         dashArray: '6 4',
                     }).bindPopup(`<b>${fence.name}</b><br/>${fence.description}`)
-                      .addTo(layerGroupRef.current!);
+                        .addTo(layerGroupRef.current!);
                 }
-            } catch {
-                // Map container destroyed — skip silently
-                layerGroupRef.current = null;
             }
-        });
+        } catch {
+            // Map container destroyed — skip silently and reattach on the next attempt.
+            layerGroupRef.current = null;
+            attachedMapRef.current = null;
+        } finally {
+            renderingRef.current = false;
+        }
     }, [visible, fences, mapRef]);
+
+    // Render geofences on map and recover when the Leaflet instance appears or changes.
+    useEffect(() => {
+        renderGeofences();
+        if (!visible && fences.length === 0) return;
+
+        const interval = setInterval(() => {
+            const map = mapRef.current;
+            if (map && attachedMapRef.current !== map && !renderingRef.current) {
+                renderGeofences();
+            }
+        }, 500);
+
+        return () => clearInterval(interval);
+    }, [visible, fences, mapRef, renderGeofences]);
 
     // Remove all draw artifacts from the map
     const cleanupDraw = useCallback((map: L.Map) => {
