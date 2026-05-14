@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/AuthProvider';
 import { BACKEND_URL } from '@/lib/config';
+import { buildAvatarSrc } from '@/lib/avatar';
 
 export default function ProfilePage() {
     const { session, profile, loading, profileLoading, setProfile } = useAuth();
@@ -163,11 +164,8 @@ export default function ProfilePage() {
         return null;
     }
 
-    const avatarSrc = profile.avatarUrl
-        ? `${BACKEND_URL}${profile.avatarUrl}?v=${encodeURIComponent(profile.updatedAt)}`
-        : null;
-
     const initials = `${profile.firstName.charAt(0)}${profile.lastName.charAt(0)}`.toUpperCase();
+    const avatarSrc = buildAvatarSrc(profile.avatarUrl, profile.updatedAt, initials);
 
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-brand-onyx transition-colors">
@@ -203,9 +201,11 @@ export default function ProfilePage() {
                         <div className="relative group">
                             <div className="w-24 h-24 rounded-full overflow-hidden border-3 border-gray-300 dark:border-gray-600 bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
                                 {avatarSrc && !imgError ? (
-                                    <img
+                                    <Image
                                         src={avatarSrc}
                                         alt="Avatar"
+                                        width={96}
+                                        height={96}
                                         className="w-full h-full object-cover"
                                         onError={() => setImgError(true)}
                                     />

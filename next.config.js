@@ -60,12 +60,36 @@ const withPWA = require('@ducanh2912/next-pwa').default({
 });
 
 /** @type {import('next').NextConfig} */
+const path = require('path');
+const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:7531';
+const backend = (() => {
+    try {
+        return new URL(backendUrl);
+    } catch {
+        return null;
+    }
+})();
+
 const nextConfig = {
     reactStrictMode: true,
     output: 'standalone',
     turbopack: {
-        root: '.',
+        // Use an absolute path for turbopack.root to avoid the warning
+        root: path.resolve(__dirname),
     },
+    // Configure Next Image to allow loading avatars directly from the backend host
+    images: backend
+        ? {
+              remotePatterns: [
+                  {
+                      protocol: backend.protocol.replace(':', ''),
+                      hostname: backend.hostname,
+                      port: backend.port || undefined,
+                      pathname: '/**',
+                  },
+              ],
+          }
+        : undefined,
 };
 
 module.exports = withPWA(nextConfig);

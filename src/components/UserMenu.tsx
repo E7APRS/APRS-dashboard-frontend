@@ -1,8 +1,9 @@
 'use client';
 
+import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 import { UserProfile } from '@/lib/types';
-import { BACKEND_URL } from '@/lib/config';
+import { buildAvatarSrc } from '@/lib/avatar';
 
 interface Props {
     profile: UserProfile;
@@ -41,11 +42,8 @@ export default function UserMenu({ profile, onSignOut, onProfile, onSettings }: 
         return () => document.removeEventListener('keydown', handleKey);
     }, [open]);
 
-    const avatarSrc = profile.avatarUrl
-        ? `${BACKEND_URL}${profile.avatarUrl}?v=${encodeURIComponent(profile.updatedAt)}`
-        : null;
-
     const initials = `${profile.firstName.charAt(0)}${profile.lastName.charAt(0)}`.toUpperCase();
+    const avatarSrc = buildAvatarSrc(profile.avatarUrl, profile.updatedAt, initials);
 
     return (
         <div ref={menuRef} className="relative">
@@ -55,11 +53,12 @@ export default function UserMenu({ profile, onSignOut, onProfile, onSettings }: 
                 aria-label="User menu"
             >
                 {avatarSrc && !imgError ? (
-                    <img
+                    <Image
                         src={avatarSrc}
                         alt={`${profile.firstName} ${profile.lastName}`}
+                        width={40}
+                        height={40}
                         className="w-full h-full object-cover"
-                        crossOrigin="anonymous"
                         onError={() => setImgError(true)}
                     />
                 ) : (

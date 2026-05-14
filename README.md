@@ -41,6 +41,23 @@ Open `http://localhost:3000`. Backend must be running at `NEXT_PUBLIC_BACKEND_UR
 |---------------------------|-------------------------|--------------------------------|
 | `NEXT_PUBLIC_BACKEND_URL` | `http://localhost:3001` | Backend URL (WebSocket + REST) |
 
+## Avatar Images
+
+User avatars are loaded through the same-origin `/api/avatar` proxy route. This keeps avatar loading stable even when
+the backend image host is unreachable or a browser extension blocks cross-origin image requests.
+
+Quick smoke test (run the frontend first):
+
+```bash
+npm run test:avatar
+```
+
+Set `BASE_URL` if the frontend runs on a different port:
+
+```bash
+BASE_URL=http://127.0.0.1:3001 npm run test:avatar
+```
+
 ## APRS Symbol Icons
 
 Icons are rendered using the [hessu/aprs-symbols](https://github.com/hessu/aprs-symbols) sprite sheets loaded from
